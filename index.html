@@ -1,1 +1,306 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kashi Growth Academy</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f6fb;color:#20263a}
+header{background:#18213b;color:white;padding:24px;text-align:center}
+header h1{margin:0 0 8px;color:#f0c64b}
+header p{margin:5px}
+main{max-width:900px;margin:25px auto;padding:16px}
+.card{background:white;padding:22px;border-radius:14px;margin:15px 0;box-shadow:0 3px 14px #00000010}
+input,button{padding:12px;margin:6px 0;border-radius:8px;font-size:15px}
+input{width:100%;border:1px solid #ccd2df}
+button{border:0;background:#253b70;color:white;cursor:pointer}
+button:hover{opacity:.9}
+button:disabled{background:#999;cursor:not-allowed}
+.secondary{background:#e9edf7;color:#18213b}
+.lesson{border:1px solid #e1e5ee;padding:16px;border-radius:10px;margin:12px 0}
+.question{padding:12px 0;border-bottom:1px solid #eee}
+label{display:block;margin:8px 0}
+.small{font-size:13px;color:#667085}
+#message{padding:10px;border-radius:8px;margin:10px 0}
+.hidden{display:none}
+.progress{height:12px;background:#e5e8ef;border-radius:10px;overflow:hidden}
+#progressBar{height:12px;width:0;background:#20a36b}
+footer{text-align:center;padding:25px;color:#667085}
+</style>
+</head>
+<body>
+<header>
+<h1>KASHI GROWTH ACADEMY</h1>
+<p>Amazon Learning Academy</p>
+<p>Learn Together. Grow Together.</p>
+<p>Founded by Kashif Nawaz</p>
+</header>
+
+<main>
+<div id="message" class="hidden"></div>
+
+<section id="auth" class="card">
+<h2>Student Login / Registration</h2>
+<p class="small">Apna account banayein ya pehle se bane account mein login karein.</p>
+<input id="name" placeholder="Full name (registration ke liye)">
+<input id="email" type="email" placeholder="Email address">
+<input id="password" type="password" placeholder="Password (kam az kam 6 characters)">
+<button onclick="signup()">Create Student Account</button>
+<button class="secondary" onclick="login()">Login</button>
+</section>
+
+<section id="academy" class="hidden">
+<div class="card">
+<h2 id="welcome">Welcome</h2>
+<button class="secondary" onclick="logout()">Logout</button>
+<h3>Your Learning Progress</h3>
+<div class="progress"><div id="progressBar"></div></div>
+<p id="progressText" class="small">0 of 4 lessons completed</p>
+</div>
+
+<div class="card">
+<h2>Amazon Learning Course</h2>
+<p>Har lesson parhein, phir quiz dein. 5 mein se kam az kam 4 jawab sahi honay par lesson complete hoga.</p>
+<div id="lessons"></div>
+</div>
+<div id="lessonArea" class="card hidden"></div>
+</section>
+</main>
+
+<footer>Kashi Growth Academy • Learn Together. Grow Together.</footer>
+
+<script>
+// Supabase connection
+const SUPABASE_URL = "https://uzaujcficpdgtwyueei.supabase.co";
+const SUPABASE_KEY = "sb_publishable_yvzHpNuuW6Vf-XtzejrkxA_kd_wHYd7";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let completed = [];
+let currentLesson = null;
+
+const course = [
+{
+id:1,title:"Lesson 1 — Amazon Introduction",
+body:`<h3>Amazon kya hai?</h3>
+<p>Amazon ek online marketplace hai jahan buyers products khareedte hain aur sellers apne products bechte hain.</p>
+<ul><li><b>Seller:</b> Product bechne wala.</li>
+<li><b>Buyer:</b> Product khareedne wala.</li>
+<li><b>Inventory:</b> Aapka available stock.</li>
+<li><b>Listing:</b> Amazon par product ka page.</li>
+<li><b>Order:</b> Customer ki purchase request.</li></ul>
+<h3>Example: Handmade Crochet Bag</h3>
+<p>Aap crochet bag banate hain, uski listing banate hain, stock rakhte hain aur customer order karta hai. Ye Amazon selling ka basic process hai.</p>`,
+quiz:[
+["Amazon kya hai?",["Online marketplace","Bank","School"],0],
+["Product bechne wale ko kya kehte hain?",["Buyer","Seller","Visitor"],1],
+["Inventory ka matlab kya hai?",["Stock","Advertisement","Review"],0],
+["Listing kya hoti hai?",["Product page","Payment card","Delivery van"],0],
+["Order kis cheez ko kehte hain?",["Customer ki purchase","Product photo","Seller account"],0]
+]
+},
+{
+id:2,title:"Lesson 2 — Seller Account",
+body:`<h3>Seller Central</h3>
+<p>Amazon Seller Central woh dashboard hai jahan seller apna business manage karta hai.</p>
+<ul><li><b>Orders:</b> Customer orders dekhna.</li>
+<li><b>Inventory:</b> Stock manage karna.</li>
+<li><b>Payments:</b> Payments aur transactions dekhna.</li>
+<li><b>Advertising:</b> Ads campaigns manage karna.</li></ul>
+<h3>Account plans</h3>
+<p>Individual aur Professional selling plans mukhtalif fees aur features rakhte hain. Country aur waqt ke mutabiq official Amazon fees zaroor check karein.</p>`,
+quiz:[
+["Seller Central kis ke liye hai?",["Seller","Buyer only","Courier"],0],
+["Orders section mein kya dekhte hain?",["Customer orders","Weather","School results"],0],
+["Inventory ka kaam kya hai?",["Stock manage karna","Logo banana","Email bhejna"],0],
+["Payments section kis liye hai?",["Transactions","Product photos","Keywords"],0],
+["Selling plans ki fees kahan verify karni chahiye?",["Official Amazon site","Random message","Guess se"],0]
+]
+},
+{
+id:3,title:"Lesson 3 — Product Research",
+body:`<h3>Product choose karne se pehle research</h3>
+<ul><li>Demand: Log product khareed rahe hain?</li>
+<li>Competition: Kitne sellers maujood hain?</li>
+<li>Price: Market mein selling price kya hai?</li>
+<li>Profit: Fees aur tamam costs ke baad kitna bachta hai?</li>
+<li>Seasonality: Kya product sirf kisi season mein bikta hai?</li></ul>
+<h3>Crochet bag example</h3>
+<p>Misal: Selling price $30, product cost $10, shipping $4, Amazon fees $5 aur packaging $1. Estimated profit $10 hai. Ye sirf example hai; asal fees aur costs verify karein.</p>
+<p>Product ko alag banane ke liye design, quality, size aur useful features par kaam karein.</p>`,
+quiz:[
+["Demand ka matlab?",["Customer interest","Product weight","Seller name"],0],
+["Competition kya batati hai?",["Market mein rivals","Shipping address","Bag colour"],0],
+["Profit calculate karte waqt kya minus karna chahiye?",["Costs aur fees","Sirf product name","Reviews"],0],
+["Seasonality ka matlab?",["Season ke mutabiq demand","Account password","Product photo"],0],
+["Product ko different kaise banayein?",["Useful unique features","Copied listing","Fake reviews"],0]
+]
+},
+{
+id:4,title:"Lesson 4 — Product Listing",
+body:`<h3>Achhi listing ke parts</h3>
+<ul><li><b>Title:</b> Product ka clear naam aur important details.</li>
+<li><b>Images:</b> Saaf aur accurate product photos.</li>
+<li><b>Bullet points:</b> Product ke important benefits.</li>
+<li><b>Description:</b> Product ki mazeed tafseel.</li>
+<li><b>Keywords:</b> Woh search terms jo customers use karte hain.</li></ul>
+<h3>Crochet bag example</h3>
+<p>Title: Handmade Crochet Tote Bag for Women — Boho Everyday Shoulder Bag.</p>
+<p>Keywords: crochet tote bag, handmade crochet bag, boho shoulder bag.</p>
+<p>Product ke material aur features sach likhein. Jo cheez product mein nahi, uska claim na karein.</p>`,
+quiz:[
+["Listing ka title kya batata hai?",["Product ka naam aur details","Seller password","Bank balance"],0],
+["Images kaisi honi chahiye?",["Clear aur accurate","Blurred","Unrelated"],0],
+["Bullet points ka kaam?",["Important features batana","Password save karna","Payment lena"],0],
+["Keywords kyun use hote hain?",["Customer searches se match ke liye","Courier booking","Tax payment"],0],
+["Product listing mein kya likhna chahiye?",["Sach aur accurate details","Fake claims","Copied reviews"],0]
+]
+},
+{
+id:5,title:"Lesson 5 — PPC Introduction",
+body:`<h3>PPC kya hai?</h3>
+<p>PPC ka matlab Pay Per Click hai. Amazon advertising mein seller aam tor par ad par click hone par pay karta hai.</p>
+<h3>Basic terms</h3>
+<ul><li><b>Campaign:</b> Advertising setup.</li>
+<li><b>Keyword:</b> Search term jis par ad target ho sakta hai.</li>
+<li><b>Bid:</b> Click ke liye offer ki gayi amount.</li>
+<li><b>Budget:</b> Campaign spending limit.</li>
+<li><b>ACOS:</b> Ad spend divided by ad sales, multiplied by 100.</li></ul>
+<p>Ads chalane se pehle product cost, Amazon fees aur profit samajhna zaroori hai. PPC mein sales guaranteed nahi hoti.</p>`,
+quiz:[
+["PPC ka full form?",["Pay Per Click","Product Price Cost","Payment Per Customer"],0],
+["Bid kya hoti hai?",["Click ke liye offer amount","Product size","Stock count"],0],
+["Budget kis cheez ko control karta hai?",["Ad spending limit","Bag colour","Seller name"],0],
+["ACOS kis se related hai?",["Ad spend aur ad sales","Shipping weight","Product title"],0],
+["Kya PPC sales guarantee karta hai?",["Nahi","Haan, hamesha","Har product par"],0]
+]
+}
+];
+
+function notify(text){
+ const box=document.getElementById("message");
+ box.textContent=text;
+ box.classList.remove("hidden");
+ window.scrollTo(0,0);
+}
+function clearNotify(){
+ document.getElementById("message").classList.add("hidden");
+}
+async function signup(){
+ clearNotify();
+ const full_name=document.getElementById("name").value.trim();
+ const email=document.getElementById("email").value.trim();
+ const password=document.getElementById("password").value;
+ if(!full_name||!email||password.length<6){notify("Name, valid email aur kam az kam 6 character password enter karein.");return;}
+ const {data,error}=await db.auth.signUp({email,password,options:{data:{full_name}}});
+ if(error){notify(error.message);return;}
+ if(data.session){notify("Account ban gaya! Academy load ho rahi hai.");await startAcademy(data.user);}
+ else{notify("Registration request ho gayi. Email inbox check karein aur confirmation link par click karein, phir login karein.");}
+}
+async function login(){
+ clearNotify();
+ const email=document.getElementById("email").value.trim();
+ const password=document.getElementById("password").value;
+ const {data,error}=await db.auth.signInWithPassword({email,password});
+ if(error){notify(error.message);return;}
+ await startAcademy(data.user);
+}
+async function logout(){
+ await db.auth.signOut();
+ currentUser=null;
+ document.getElementById("academy").classList.add("hidden");
+ document.getElementById("auth").classList.remove("hidden");
+ document.getElementById("lessonArea").classList.add("hidden");
+ notify("Aap logout ho gaye hain.");
+}
+async function startAcademy(user){
+ currentUser=user;
+ document.getElementById("auth").classList.add("hidden");
+ document.getElementById("academy").classList.remove("hidden");
+ document.getElementById("welcome").textContent="Welcome, "+(user.user_metadata.full_name||user.email);
+ await loadProgress();
+ renderLessons();
+}
+async function loadProgress(){
+ const {data,error}=await db.from("lesson_progress").select("lesson_id,completed").eq("user_id",currentUser.id);
+ if(error){notify("Progress load nahi hui: "+error.message);return;}
+ completed=(data||[]).filter(x=>x.completed).map(x=>x.lesson_id);
+ updateProgress();
+}
+function updateProgress(){
+ const count=[1,2,3,4].filter(id=>completed.includes(id)).length;
+ document.getElementById("progressBar").style.width=(count/4*100)+"%";
+ document.getElementById("progressText").textContent=count+" of 4 lessons completed";
+}
+function renderLessons(){
+ const holder=document.getElementById("lessons");
+ holder.innerHTML="";
+ const basicsDone=[1,2,3,4].every(id=>completed.includes(id));
+ course.forEach(lesson=>{
+  const locked=lesson.id===5&&!basicsDone;
+  const div=document.createElement("div");
+  div.className="lesson";
+  const status=locked?"🔒 Locked":completed.includes(lesson.id)?"✅ Completed":"📘 Available";
+  div.innerHTML="<h3>"+lesson.title+"</h3><p>"+status+"</p>";
+  const btn=document.createElement("button");
+  btn.textContent=locked?"Complete Lessons 1–4 First":"Open Lesson";
+  btn.disabled=locked;
+  btn.onclick=()=>openLesson(lesson.id);
+  div.appendChild(btn);
+  holder.appendChild(div);
+ });
+}
+function openLesson(id){
+ currentLesson=course.find(x=>x.id===id);
+ const area=document.getElementById("lessonArea");
+ area.classList.remove("hidden");
+ area.innerHTML="<h2>"+currentLesson.title+"</h2>"+currentLesson.body+"<hr><h3>Lesson Quiz</h3><p>Har sawal ka ek jawab select karein.</p><div id='quizForm'></div><button onclick='submitQuiz()'>Submit Quiz</button>";
+ const form=document.getElementById("quizForm");
+ currentLesson.quiz.forEach((q,i)=>{
+  const div=document.createElement("div");
+  div.className="question";
+  let html="<b>"+(i+1)+". "+q[0]+"</b>";
+  q[1].forEach((choice,j)=>{
+   html+="<label><input style='width:auto' type='radio' name='q"+i+"' value='"+j+"'> "+choice+"</label>";
+  });
+  div.innerHTML=html;
+  form.appendChild(div);
+ });
+ area.scrollIntoView({behavior:"smooth"});
+}
+async function submitQuiz(){
+ let score=0;
+ for(let i=0;i<currentLesson.quiz.length;i++){
+  const selected=document.querySelector("input[name='q"+i+"']:checked");
+  if(!selected){notify("Meherbani karke tamam sawalon ke jawab dein.");return;}
+  if(Number(selected.value)===currentLesson.quiz[i][2])score++;
+ }
+ const total=currentLesson.quiz.length;
+ const passed=score>=4;
+ const {error:quizError}=await db.from("quiz_attempts").insert({
+  user_id:currentUser.id,lesson_id:currentLesson.id,score,total_questions:total
+ });
+ if(quizError){notify("Quiz result save nahi hua: "+quizError.message);return;}
+ if(passed){
+  const {error}=await db.from("lesson_progress").upsert({
+   user_id:currentUser.id,lesson_id:currentLesson.id,completed:true,updated_at:new Date().toISOString()
+  },{onConflict:"user_id,lesson_id"});
+  if(error){notify("Progress save nahi hui: "+error.message);return;}
+  if(!completed.includes(currentLesson.id))completed.push(currentLesson.id);
+  updateProgress();
+  renderLessons();
+  notify("Mubarak ho! Aapka score "+score+"/"+total+" hai. Lesson complete ho gaya!");
+ }else{
+  notify("Aapka score "+score+"/"+total+" hai. Pass hone ke liye 4 sahi jawab chahiye. Lesson dobara parhein aur phir try karein.");
+ }
+}
+db.auth.getSession().then(({data})=>{
+ if(data.session)startAcademy(data.session.user);
+});
+</script>
+</body>
+</html>
+
