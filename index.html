@@ -189,17 +189,42 @@ function notify(text){
 function clearNotify(){
  document.getElementById("message").classList.add("hidden");
 }
+
+// UPDATED SIGNUP FUNCTION
 async function signup(){
  clearNotify();
- const full_name=document.getElementById("name").value.trim();
- const email=document.getElementById("email").value.trim();
- const password=document.getElementById("password").value;
- if(!full_name||!email||password.length<6){notify("Name, valid email aur kam az kam 6 character password enter karein.");return;}
- const {data,error}=await db.auth.signUp({email,password,options:{data:{full_name}}});
- if(error){notify(error.message);return;}
- if(data.session){notify("Account ban gaya! Academy load ho rahi hai.");await startAcademy(data.user);}
- else{notify("Registration request ho gayi. Email inbox check karein aur confirmation link par click karein, phir login karein.");}
+
+ const full_name = document.getElementById("name").value.trim();
+ const email = document.getElementById("email").value.trim();
+ const password = document.getElementById("password").value;
+
+ if(!full_name || !email || password.length < 6){
+  notify("Name, valid email aur kam az kam 6 character password enter karein.");
+  return;
+ }
+
+ const {data,error} = await db.auth.signUp({
+  email,
+  password,
+  options:{
+   data:{full_name},
+   emailRedirectTo:"https://kashi-growth-academy.kashifnawaz9810.workers.dev"
+  }
+ });
+
+ if(error){
+  notify(error.message);
+  return;
+ }
+
+ if(data.session){
+  notify("Account ban gaya! Academy load ho rahi hai.");
+  await startAcademy(data.user);
+ }else{
+  notify("Registration request ho gayi. Email confirmation check karein.");
+ }
 }
+
 async function login(){
  clearNotify();
  const email=document.getElementById("email").value.trim();
@@ -208,6 +233,7 @@ async function login(){
  if(error){notify(error.message);return;}
  await startAcademy(data.user);
 }
+
 async function logout(){
  await db.auth.signOut();
  currentUser=null;
@@ -216,6 +242,7 @@ async function logout(){
  document.getElementById("lessonArea").classList.add("hidden");
  notify("Aap logout ho gaye hain.");
 }
+
 async function startAcademy(user){
  currentUser=user;
  document.getElementById("auth").classList.add("hidden");
@@ -224,17 +251,20 @@ async function startAcademy(user){
  await loadProgress();
  renderLessons();
 }
+
 async function loadProgress(){
  const {data,error}=await db.from("lesson_progress").select("lesson_id,completed").eq("user_id",currentUser.id);
  if(error){notify("Progress load nahi hui: "+error.message);return;}
  completed=(data||[]).filter(x=>x.completed).map(x=>x.lesson_id);
  updateProgress();
 }
+
 function updateProgress(){
  const count=[1,2,3,4].filter(id=>completed.includes(id)).length;
  document.getElementById("progressBar").style.width=(count/4*100)+"%";
  document.getElementById("progressText").textContent=count+" of 4 lessons completed";
 }
+
 function renderLessons(){
  const holder=document.getElementById("lessons");
  holder.innerHTML="";
@@ -253,6 +283,7 @@ function renderLessons(){
   holder.appendChild(div);
  });
 }
+
 function openLesson(id){
  currentLesson=course.find(x=>x.id===id);
  const area=document.getElementById("lessonArea");
@@ -271,6 +302,7 @@ function openLesson(id){
  });
  area.scrollIntoView({behavior:"smooth"});
 }
+
 async function submitQuiz(){
  let score=0;
  for(let i=0;i<currentLesson.quiz.length;i++){
@@ -297,10 +329,10 @@ async function submitQuiz(){
   notify("Aapka score "+score+"/"+total+" hai. Pass hone ke liye 4 sahi jawab chahiye. Lesson dobara parhein aur phir try karein.");
  }
 }
+
 db.auth.getSession().then(({data})=>{
  if(data.session)startAcademy(data.session.user);
 });
 </script>
 </body>
 </html>
-
