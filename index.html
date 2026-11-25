@@ -128,7 +128,7 @@ header,main,.welcome-overlay{position:relative;z-index:1}
 .admin-section-heading h3{margin:5px 0 0;font-size:19px}
 .admin-count{font-size:11px;color:#e1c36d;background:#282314;border:1px solid #665326;border-radius:30px;padding:6px 10px}
 .admin-toolbar{display:flex;align-items:center;gap:10px;margin:13px 0}
-.admin-toolbar input{max-width:360px;margin:0;background:#11191c;border-color:#4d4b3c}
+.admin-toolbar input,.admin-toolbar select{max-width:360px;margin:0;background:#11191c;border:1px solid #4d4b3c;color:#eee;border-radius:8px;padding:12px}
 .admin-toolbar span{font-size:11px;color:#8fa59b}
 .admin-table{border-collapse:separate;border-spacing:0;border:1px solid #343b38;border-radius:10px;overflow:hidden;background:rgba(8,12,13,.6)}
 .admin-table th{background:linear-gradient(100deg,#332b17,#1a2929);color:#f0d47c;font-size:11px;letter-spacing:.4px}
@@ -174,7 +174,7 @@ header,main,.welcome-overlay{position:relative;z-index:1}
 .lesson-sample-gallery{margin:18px 0 22px;padding:14px;border:1px solid rgba(212,175,55,.28);border-radius:14px;background:rgba(255,255,255,.025)}.lesson-sample-gallery h3{margin:0 0 12px;color:#f0d477;font-size:16px}.lesson-sample-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.lesson-sample-gallery h3{grid-column:1/-1}.lesson-sample-gallery figure{margin:0;min-width:0}.lesson-sample-gallery img{display:block;width:100%;height:130px;object-fit:cover;border-radius:9px;border:1px solid rgba(255,255,255,.12)}.lesson-sample-gallery figcaption{font-size:11px;color:#d6d0c1;margin-top:6px;text-align:center}@media(max-width:600px){.lesson-sample-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}.lesson-sample-gallery figure:last-child{grid-column:1/-1}.lesson-sample-gallery figure:last-child img{height:150px}}
 
 /* Admin individual student report */
-.student-detail-panel{margin:16px 0;padding:18px;border:1px solid #806326;border-radius:12px;background:linear-gradient(145deg,#211d12,#101a1c)}.student-detail-panel h3{margin-top:0}.student-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin:12px 0}.student-detail-stat{padding:12px;border:1px solid #514521;border-radius:9px;background:#171b19}.student-detail-stat small{display:block;color:#cfc6ac}.student-detail-stat b{display:block;color:#f4d477;font-size:20px;margin-top:5px}.student-detail-lessons{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin:12px 0}.student-detail-lesson{padding:10px;border:1px solid #3d4842;border-radius:8px;background:#151a19;font-size:12px}.student-detail-lesson b{display:block;color:#f0d477;margin-bottom:4px}.student-detail-lesson small{color:#c4c9c2}.admin-table tbody tr.student-row-click{cursor:pointer}.admin-table tbody tr.student-row-click:focus{outline:2px solid #f0c64b;outline-offset:-2px}.admin-table tbody tr.student-row-selected{background:rgba(212,171,65,.16)}
+.student-detail-panel{margin:16px 0;padding:18px;border:1px solid #806326;border-radius:12px;background:linear-gradient(145deg,#211d12,#101a1c)}.student-detail-panel h3{margin-top:0}.student-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin:12px 0}.student-detail-stat{padding:12px;border:1px solid #514521;border-radius:9px;background:#171b19}.student-detail-stat small{display:block;color:#cfc6ac}.student-detail-stat b{display:block;color:#f4d477;font-size:20px;margin-top:5px}.student-detail-lessons{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin:12px 0}.student-detail-lesson{padding:10px;border:1px solid #3d4842;border-radius:8px;background:#151a19;font-size:12px}.student-detail-lesson b{display:block;color:#f0d477;margin-bottom:4px}.student-detail-lesson small{color:#c4c9c2}.activity-pill{display:inline-block;padding:5px 8px;border-radius:20px;font-size:10px;font-weight:bold;white-space:nowrap}.activity-active{color:#8ce0ae;background:#123322;border:1px solid #397b54}.activity-inactive{color:#e5c77a;background:#332a15;border:1px solid #806326}.admin-table tbody tr.student-row-click{cursor:pointer}.admin-table tbody tr.student-row-click:focus{outline:2px solid #f0c64b;outline-offset:-2px}.admin-table tbody tr.student-row-selected{background:rgba(212,171,65,.16)}
 </style>
 </head>
 <body>
@@ -322,11 +322,11 @@ header,main,.welcome-overlay{position:relative;z-index:1}
 </div>
 <div class="admin-section">
  <div class="admin-section-heading"><div><span class="admin-kicker">STUDENT MANAGEMENT</span><h3>Student Profiles & Progress</h3></div><span class="admin-count" id="studentCountLabel">0 accounts</span></div>
- <div class="admin-toolbar"><input id="adminStudentSearch" type="search" placeholder="Search student name..." oninput="filterAdminStudents()" aria-label="Search students"><span>Live search</span></div>
+ <div class="admin-toolbar"><input id="adminStudentSearch" type="search" placeholder="Search student name..." oninput="filterAdminStudents()" aria-label="Search students"><select id="adminStudentStatus" onchange="filterAdminStudents()" aria-label="Filter students by activity"><option value="all">All activity statuses</option><option value="active">Active (last 30 days)</option><option value="inactive">Inactive / no activity</option></select><span>Search & activity filter</span></div>
  <div class="admin-table-wrap">
   <table class="admin-table">
-   <thead><tr><th>Student Name</th><th>Registration Date</th><th>Lessons Completed</th><th>Progress</th><th>Quiz Attempts</th><th>Average Quiz Score</th><th>Last Activity</th></tr></thead>
-   <tbody id="studentRows"><tr><td colspan="7">Loading...</td></tr></tbody>
+   <thead><tr><th>Student Name</th><th>Registration Date</th><th>Lessons Completed</th><th>Progress</th><th>Quiz Attempts</th><th>Average Quiz Score</th><th>Last Activity</th><th>Activity Status</th></tr></thead>
+   <tbody id="studentRows"><tr><td colspan="8">Loading...</td></tr></tbody>
   </table>
  </div>
  <div id="studentDetailPanel" class="student-detail-panel hidden" aria-live="polite">
@@ -1292,8 +1292,11 @@ function showStudentDetails(studentId){
 
 function filterAdminStudents(){
  const query=(document.getElementById("adminStudentSearch")?.value||"").trim().toLowerCase();
+ const status=document.getElementById("adminStudentStatus")?.value||"all";
  document.querySelectorAll("#studentRows tr").forEach(row=>{
-  row.classList.toggle("hidden",!!query&&!((row.dataset.search||"").includes(query)));
+  const matchesName=!query||(row.dataset.search||"").includes(query);
+  const matchesStatus=status==="all"||row.dataset.activityStatus===status;
+  row.classList.toggle("hidden",!matchesName||!matchesStatus);
  });
 }
 
@@ -1301,7 +1304,7 @@ async function loadAdminDashboard(){
  if(!currentUser)return;
  const adminMessage=document.getElementById("adminMessage");
  adminMessage.textContent="Dashboard load ho raha hai...";
- document.getElementById("studentRows").innerHTML="<tr><td colspan='7'>Loading...</td></tr>";
+ document.getElementById("studentRows").innerHTML="<tr><td colspan='8'>Loading...</td></tr>";
  document.getElementById("quizRows").innerHTML="<tr><td colspan='5'>Loading...</td></tr>";
 
  const {data:myProfile,error:roleError}=await db.from("profiles")
@@ -1348,7 +1351,7 @@ async function loadAdminDashboard(){
  const studentRows=document.getElementById("studentRows");
  studentRows.innerHTML="";
  if(!studentList.length){
-  studentRows.innerHTML="<tr><td colspan='4'>Abhi koi account registered nahi hai.</td></tr>";
+  studentRows.innerHTML="<tr><td colspan='8'>Abhi koi account registered nahi hai.</td></tr>";
  }else{
   studentList.forEach(student=>{
    const studentProgress=progressList.filter(item=>item.user_id===student.id&&item.completed);
@@ -1362,6 +1365,8 @@ async function loadAdminDashboard(){
     ...studentProgress.map(item=>item.updated_at)
    ].filter(Boolean).map(value=>new Date(value)).filter(date=>!Number.isNaN(date.getTime()));
    const lastActivity=activityDates.length?new Date(Math.max(...activityDates.map(date=>date.getTime()))):null;
+   const isActive=!!lastActivity&&(Date.now()-lastActivity.getTime())<=30*24*60*60*1000;
+   const activityStatus=isActive?"active":"inactive";
    const row=document.createElement("tr");
    row.innerHTML=
     "<td>"+escapeHtml(student.full_name||"Student")+"</td>"+
@@ -1370,7 +1375,9 @@ async function loadAdminDashboard(){
     "<td>"+Math.round(count/course.length*100)+"%</td>"+
     "<td>"+studentAttempts.length+"</td>"+
     "<td>"+(attemptQuestions?average+"%":"—")+"</td>"+
-    "<td>"+(lastActivity?escapeHtml(formatDate(lastActivity.toISOString())):"No activity")+"</td>";
+    "<td>"+(lastActivity?escapeHtml(formatDate(lastActivity.toISOString())):"No activity")+"</td>"+
+    "<td><span class='activity-pill "+(isActive?"activity-active":"activity-inactive")+"'>"+(isActive?"Active":"Inactive")+"</span></td>";
+   row.dataset.activityStatus=activityStatus;
    row.dataset.search=(student.full_name||"Student").toLowerCase();
    row.dataset.studentId=student.id;
    row.classList.add("student-row-click");
