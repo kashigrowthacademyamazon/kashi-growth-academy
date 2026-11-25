@@ -138,6 +138,13 @@ header,main,.welcome-overlay{position:relative;z-index:1}
 .admin-table td:last-child{color:#d8c47d}
 @media(max-width:600px){.admin-heading{align-items:flex-start}.admin-refresh{width:100%}.admin-live{font-size:8px}.admin-toolbar{align-items:stretch;flex-direction:column}.admin-toolbar input{max-width:none}.admin-table{min-width:540px}}
 
+
+/* Lesson-by-lesson visual examples */
+.lesson-visual{margin:18px 0 22px;padding:16px;border:1px solid #78602a;border-radius:14px;background:linear-gradient(135deg,rgba(50,39,15,.78),rgba(14,25,28,.94));display:flex;align-items:center;gap:16px;overflow:hidden}
+.lesson-visual-art{width:112px;min-width:112px;height:104px;border-radius:12px;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,rgba(241,199,83,.22),rgba(16,24,25,.8) 70%);border:1px solid rgba(224,185,83,.28);font-size:58px}
+.lesson-visual-copy{min-width:0}.lesson-visual-copy small{display:block;color:#e6c66a;font-size:10px;letter-spacing:1.5px;font-weight:bold;margin-bottom:6px}.lesson-visual-copy b{display:block;color:#fff0bd;font-size:16px;margin-bottom:5px}.lesson-visual-copy p{margin:0;color:#d4d8d2;font-size:13px;line-height:1.55}
+@media(max-width:520px){.lesson-visual{align-items:flex-start;padding:12px;gap:12px}.lesson-visual-art{width:76px;min-width:76px;height:82px;font-size:42px}.lesson-visual-copy b{font-size:14px}}
+
 </style>
 </head>
 <body>
@@ -865,6 +872,24 @@ function renderLessons(){
  });
 }
 
+
+function lessonVisual(id){
+ const examples={
+  1:{emoji:"🛒",title:"Amazon Marketplace ka example",desc:"Customer Amazon par product search karta hai, seller listing dekhta hai aur order place karta hai.",flow:["Seller","Product Listing","Customer"]},
+  2:{emoji:"🧑‍💻",title:"Seller Account Setup",desc:"Seller apni business details, email, identity aur bank information de kar Seller Central account setup karta hai.",flow:["Details","Verification","Seller Central"]},
+  3:{emoji:"🔎",title:"Product Research ka sample",desc:"Product choose karne se pehle demand, competition, price aur reviews ko compare kiya jata hai.",flow:["Demand","Competition","Profit"]},
+  4:{emoji:"📦",title:"Supplier se product tak",desc:"Seller supplier se quotation leta hai, sample check karta hai aur quality confirm kar ke stock order karta hai.",flow:["Supplier","Sample Check","Stock"]},
+  5:{emoji:"🏬",title:"FBA vs FBM",desc:"FBA mein Amazon storage aur shipping handle karta hai. FBM mein seller khud order pack aur ship karta hai.",flow:["FBA: Amazon","OR","FBM: Seller"]},
+  6:{emoji:"🖼️",title:"Product Listing ka sample",desc:"Achhi listing mein clear product photos, searchable title, bullet points aur honest description hoti hai.",flow:["Photos","Title","Description"]},
+  7:{emoji:"🔑",title:"Keyword Research example",desc:"Customer ke search words ko title aur bullet points mein naturally use karte hain, keyword stuffing nahi.",flow:["Search Term","Relevant Keyword","Listing"]},
+  8:{emoji:"🧮",title:"Profit Calculation sample",desc:"Selling price mein se product cost, Amazon fees, shipping aur ads cost minus kar ke profit nikalte hain.",flow:["Sale Price","All Costs","Net Profit"]},
+  9:{emoji:"🎯",title:"Amazon PPC ka sample",desc:"Sponsored Ads campaign mein relevant keywords par bids set kar ke clicks, spend aur sales monitor karte hain.",flow:["Keyword","Sponsored Ad","Sales"]},
+  10:{emoji:"📈",title:"Orders se Business Growth",desc:"Orders manage karein, customers ko professional support dein aur sales, returns aur profit review kar ke growth plan banayein.",flow:["Orders","Customer Care","Growth"]}
+ };
+ const item=examples[id]||examples[1];
+ return "<div class='lesson-visual' role='img' aria-label='"+item.title+"'><div class='lesson-visual-art'>"+item.emoji+"</div><div class='lesson-visual-copy'><small>QUICK VISUAL EXAMPLE • LESSON "+id+"</small><b>"+item.title+"</b><p>"+item.desc+"</p><p style='margin-top:8px;color:#f0d477;font-size:11px;font-weight:bold'>"+item.flow.join("　➜　")+"</p></div></div>";
+}
+
 function openLesson(id){
  if(!isLessonUnlocked(id)){
   notify("Pehle pichla lesson pass karein. Us ke baad yeh lesson unlock hoga.");
@@ -875,6 +900,7 @@ function openLesson(id){
  area.classList.remove("hidden");
  area.innerHTML=
   "<h2>"+currentLesson.title+"</h2>"+
+  lessonVisual(currentLesson.id)+
   "<div class='lesson-content'>"+currentLesson.body+"</div>"+
   "<hr><h3>Lesson Quiz</h3>"+
   "<p class='small'>5 sawalat ke jawab dein. Pass hone ke liye kam az kam 4 sahi jawab zaroori hain.</p>"+
