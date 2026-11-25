@@ -331,6 +331,7 @@ header,main,.welcome-overlay{position:relative;z-index:1}
  </div>
  <div id="studentDetailPanel" class="student-detail-panel hidden" aria-live="polite">
   <div class="admin-section-heading"><div><span class="admin-kicker">INDIVIDUAL STUDENT REPORT</span><h3 id="studentDetailName">Student details</h3><p class="small" id="studentDetailMeta"></p></div><button class="secondary" type="button" onclick="closeStudentDetails()">Close Details</button></div>
+  <div class="admin-toolbar"><input id="studentNameEdit" type="text" maxlength="100" placeholder="Update student display name" aria-label="Student display name"><button type="button" onclick="saveStudentDisplayName()">Save Student Name</button></div>
   <div id="studentDetailStats" class="student-detail-grid"></div>
   <h3>Lesson-by-Lesson Progress</h3><div id="studentDetailLessons" class="student-detail-lessons"></div>
   <h3>Quiz Attempt History</h3><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Lesson</th><th>Score</th><th>Result</th><th>Attempt Date</th></tr></thead><tbody id="studentDetailQuizzes"></tbody></table></div>
@@ -1290,6 +1291,32 @@ function showStudentDetails(studentId){
  document.getElementById("studentDetailPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
+async function saveStudentDisplayName(){
+ if(currentRole!=="admin"||!currentUser){notify("Sirf admin student ka naam update kar sakta hai.");return}
+ const selectedRow=document.querySelector("#studentRows tr.student-row-selected");
+ const studentId=selectedRow?.dataset.studentId;
+ const record=adminStudentRecords.find(item=>item.profile.id===studentId);
+ const input=document.getElementById("studentNameEdit");
+ const fullName=input.value.trim();
+ if(!record){notify("Pehle student ki row select karein.");return}
+ if(!fullName){notify("Student ka naam khali nahi ho sakta.");return}
+ const button=input.parentElement.querySelector("button");
+ button.disabled=true;
+ const {error}=await db.from("profiles").update({full_name:fullName}).eq("id",studentId);
+ button.disabled=false;
+ if(error){notify("Naam update nahi hua. Database permissions check karein: "+error.message);return}
+ record.profile.full_name=fullName;
+ selectedRow.cells[0].textContent=fullName;
+ selectedRow.dataset.search=fullName.toLowerCase();
+ document.getElementById("studentDetailName").textContent=fullName;
+ input.value="";
+ const messageSelect=document.getElementById("messageStudentSelect");
+ if(messageSelect){
+  const option=[...messageSelect.options].find(item=>item.value===studentId);
+  if(option)option.textContent=fullName;
+ }
+ notify("Student ka display name update ho gaya.");
+}
 function exportAdminStudentsCSV(){
  const visibleIds=new Set([...document.querySelectorAll("#studentRows tr")].filter(row=>!row.classList.contains("hidden")&&row.dataset.studentId).map(row=>row.dataset.studentId));
  const records=adminStudentRecords.filter(record=>visibleIds.has(record.profile.id));
