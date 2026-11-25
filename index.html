@@ -322,8 +322,8 @@ header,main,.welcome-overlay{position:relative;z-index:1}
  <div class="admin-toolbar"><input id="adminStudentSearch" type="search" placeholder="Search student name..." oninput="filterAdminStudents()" aria-label="Search students"><span>Live search</span></div>
  <div class="admin-table-wrap">
   <table class="admin-table">
-   <thead><tr><th>Student Name</th><th>Registration Date</th><th>Lessons Completed</th><th>Progress</th></tr></thead>
-   <tbody id="studentRows"><tr><td colspan="4">Loading...</td></tr></tbody>
+   <thead><tr><th>Student Name</th><th>Registration Date</th><th>Lessons Completed</th><th>Progress</th><th>Quiz Attempts</th><th>Average Quiz Score</th><th>Last Activity</th></tr></thead>
+   <tbody id="studentRows"><tr><td colspan="7">Loading...</td></tr></tbody>
   </table>
  </div>
 </div>
@@ -1250,7 +1250,7 @@ async function loadAdminDashboard(){
  if(!currentUser)return;
  const adminMessage=document.getElementById("adminMessage");
  adminMessage.textContent="Dashboard load ho raha hai...";
- document.getElementById("studentRows").innerHTML="<tr><td colspan='4'>Loading...</td></tr>";
+ document.getElementById("studentRows").innerHTML="<tr><td colspan='7'>Loading...</td></tr>";
  document.getElementById("quizRows").innerHTML="<tr><td colspan='5'>Loading...</td></tr>";
 
  const {data:myProfile,error:roleError}=await db.from("profiles")
@@ -1266,7 +1266,7 @@ async function loadAdminDashboard(){
  if(profilesError){adminMessage.textContent="Profiles load nahi huay: "+profilesError.message;return}
 
  const {data:progress,error:progressError}=await db.from("lesson_progress")
-  .select("user_id,lesson_id,completed");
+  .select("user_id,lesson_id,completed,updated_at");
  if(progressError){adminMessage.textContent="Progress load nahi hui: "+progressError.message;return}
 
  const {data:attempts,error:attemptsError}=await db.from("quiz_attempts")
@@ -1299,13 +1299,26 @@ async function loadAdminDashboard(){
   studentRows.innerHTML="<tr><td colspan='4'>Abhi koi account registered nahi hai.</td></tr>";
  }else{
   studentList.forEach(student=>{
-   const count=progressList.filter(item=>item.user_id===student.id&&item.completed).length;
+   const studentProgress=progressList.filter(item=>item.user_id===student.id&&item.completed);
+   const count=studentProgress.length;
+   const studentAttempts=attemptList.filter(item=>item.user_id===student.id);
+   const attemptQuestions=studentAttempts.reduce((sum,item)=>sum+(Number(item.total_questions)||0),0);
+   const attemptCorrect=studentAttempts.reduce((sum,item)=>sum+(Number(item.score)||0),0);
+   const average=attemptQuestions?Math.round(attemptCorrect/attemptQuestions*100):0;
+   const activityDates=[
+    ...studentAttempts.map(item=>item.attempted_at),
+    ...studentProgress.map(item=>item.updated_at)
+   ].filter(Boolean).map(value=>new Date(value)).filter(date=>!Number.isNaN(date.getTime()));
+   const lastActivity=activityDates.length?new Date(Math.max(...activityDates.map(date=>date.getTime()))):null;
    const row=document.createElement("tr");
    row.innerHTML=
     "<td>"+escapeHtml(student.full_name||"Student")+"</td>"+
     "<td>"+escapeHtml(formatDate(student.created_at))+"</td>"+
     "<td>"+count+" / "+course.length+"</td>"+
-    "<td>"+Math.round(count/course.length*100)+"%</td>";
+    "<td>"+Math.round(count/course.length*100)+"%</td>"+
+    "<td>"+studentAttempts.length+"</td>"+
+    "<td>"+(attemptQuestions?average+"%":"—")+"</td>"+
+    "<td>"+(lastActivity?escapeHtml(formatDate(lastActivity.toISOString())):"No activity")+"</td>";
    row.dataset.search=(student.full_name||"Student").toLowerCase();
    studentRows.appendChild(row);
   });
