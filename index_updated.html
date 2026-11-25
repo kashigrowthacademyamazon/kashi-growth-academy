@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kashi Growth Academy | Amazon Learning</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#080808;color:#f5f5f5}
+header{background:#111;color:white;padding:28px 16px;text-align:center;border-bottom:2px solid #d9ad36}
+header h1{margin:0 0 10px;color:#f0c64b}
+header p{margin:7px;color:#ddd}
+main{max-width:1050px;margin:25px auto;padding:16px}
+.card{background:#171717;padding:22px;border-radius:14px;margin:15px 0;border:1px solid #343434;box-shadow:0 3px 15px #000}
+h2,h3{color:#f0c64b}
+input,button{padding:12px;margin:6px 0;border-radius:8px;font-size:15px}
+input{width:100%;border:1px solid #555;background:#242424;color:white}
+button{border:0;background:#d6aa32;color:#111;font-weight:bold;cursor:pointer}
+button:hover{opacity:.88}
+button:disabled{background:#555;color:#bbb;cursor:not-allowed}
+.secondary{background:#333;color:white}
+.lesson{border:1px solid #444;padding:16px;border-radius:10px;margin:12px 0;background:#202020}
+.lesson p{color:#ddd}
+.question{padding:12px 0;border-bottom:1px solid #444}
+label{display:block;margin:9px 0;color:#eee}
+.small{font-size:13px;color:#aaa}
+#message{padding:12px;border-radius:8px;margin:10px 0;background:#282828;border:1px solid #d6aa32}
+.hidden{display:none}
+.progress{height:12px;background:#444;border-radius:10px;overflow:hidden}
+#progressBar{height:12px;width:0;background:#d6aa32}
+footer{text-align:center;padding:25px;color:#aaa}
+.admin-table-wrap{overflow-x:auto}
+.admin-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;min-width:550px}
+.admin-table th,.admin-table td{padding:10px;border:1px solid #444;text-align:left}
+.admin-table th{background:#303030;color:#f0c64b}
+.admin-section{margin-top:24px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat{background:#292929;padding:15px;border-radius:10px;border:1px solid #444}
+.stat strong{display:block;font-size:24px;margin-top:6px;color:#f0c64b}
+.status{font-weight:bold}
+.lesson-content{line-height:1.75;color:#eee}
+.lesson-content li{margin:8px 0}
+.lesson-content h3{margin-top:24px}
+
+/* Animated Kashi Growth Academy background */
+body{background:#080808;color:#f5f5f5;position:relative;isolation:isolate;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.42;
+ background:
+  linear-gradient(rgba(217,173,54,.055) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(217,173,54,.045) 1px,transparent 1px);
+ background-size:48px 48px;animation:gridDrift 24s linear infinite}
+body:after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.22;
+ background:linear-gradient(115deg,transparent 0 34%,rgba(214,170,50,.20) 34.2%,transparent 34.6% 58%,rgba(214,170,50,.13) 58.2%,transparent 58.6%),
+ repeating-linear-gradient(165deg,transparent 0 90px,rgba(214,170,50,.10) 91px,transparent 93px);
+ transform:translateX(-5%);animation:marketFlow 18s ease-in-out infinite alternate}
+@keyframes gridDrift{to{background-position:48px 48px}}
+@keyframes marketFlow{from{transform:translateX(-5%) translateY(0)}to{transform:translateX(5%) translateY(-12px)}}
+header{position:relative;overflow:hidden;background:linear-gradient(115deg,#101010,#19150b 55%,#101010)}
+header:after{content:"";position:absolute;left:-10%;right:-10%;bottom:0;height:2px;background:linear-gradient(90deg,transparent,#f0c64b,#fff0a6,#d6aa32,transparent);background-size:200% 100%;animation:goldSweep 5s linear infinite}
+@keyframes goldSweep{to{background-position:200% 0}}
+.card,.lesson{backdrop-filter:blur(3px)}
+.market-banner{position:relative;overflow:hidden;border:1px solid #8d6d22;border-radius:14px;margin:16px 0;padding:18px 20px;background:linear-gradient(110deg,rgba(32,26,12,.96),rgba(20,20,20,.96));min-height:112px}
+.banner-track{display:flex;width:300%;animation:bannerMove 18s infinite ease-in-out}
+.banner-panel{width:33.333%;padding:4px 12px;flex-shrink:0}
+.banner-panel h3{margin:0 0 7px;color:#f0c64b}
+.banner-panel p{margin:0;color:#e2dccb;line-height:1.5}
+@keyframes bannerMove{0%,27%{transform:translateX(0)}33%,60%{transform:translateX(-33.333%)}66%,93%{transform:translateX(-66.666%)}100%{transform:translateX(0)}}
+.banner-accent{color:#f6d66e;font-weight:bold}
+.welcome-overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.88);backdrop-filter:blur(8px)}
+.welcome-overlay.hidden{display:none}
+.welcome-panel{width:min(620px,100%);padding:30px 24px;border:1px solid #d6aa32;border-radius:20px;text-align:center;background:radial-gradient(ellipse at top,rgba(214,170,50,.18),transparent 60%),#151515;box-shadow:0 20px 80px #000;animation:welcomePop .65s ease both}
+.welcome-panel h2{font-size:clamp(28px,6vw,44px);margin:8px 0;color:#f6d66e}
+.welcome-panel p{color:#e7dfca;line-height:1.6}
+.welcome-kicker{letter-spacing:3px;color:#d6aa32;font-size:12px;font-weight:bold}
+.welcome-slide{min-height:86px;animation:welcomeText .45s ease}
+@keyframes welcomePop{from{opacity:0;transform:translateY(22px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes welcomeText{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+.market-decoration{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:15px 0}
+.market-chip{border:1px solid #69521e;background:#211b0d;color:#f2d477;border-radius:999px;padding:7px 12px;font-size:12px}
+
+/* Premium Gold finish */
+:root{--gold:#f3cf68;--gold2:#b98722;--panel:#15130e}
+body{background:radial-gradient(ellipse at 50% -10%,#3a2b0d 0%,#100e09 34%,#070707 75%)}
+header{background:linear-gradient(120deg,#090909 0%,#211907 48%,#090909 100%);box-shadow:0 8px 35px #000}
+.card{background:linear-gradient(145deg,rgba(31,26,15,.97),rgba(17,17,17,.98));border:1px solid rgba(220,177,65,.38);box-shadow:0 12px 35px rgba(0,0,0,.42),inset 0 1px rgba(255,224,139,.05)}
+.lesson{background:linear-gradient(145deg,#211c10,#151515);border-color:#6f5724}
+button{background:linear-gradient(135deg,#ffe28a,#d5a52e 55%,#9e741b);box-shadow:0 4px 14px rgba(214,170,50,.18)}
+button:hover{filter:brightness(1.08);transform:translateY(-1px)}
+input,textarea{width:100%;border:1px solid #78602a;background:#171510;color:#fff;padding:12px;border-radius:8px;font:inherit}
+textarea{min-height:90px;resize:vertical}
+.founder-card{display:grid;grid-template-columns:150px 1fr;gap:20px;align-items:center}
+.founder-card.no-photo{grid-template-columns:1fr}.founder-photo{width:150px;height:150px;border-radius:50%;object-fit:cover;border:3px solid #e6bd50;box-shadow:0 0 28px #b9872244;background:#211b0d}
+.message-item{border:1px solid #55451f;border-radius:10px;padding:12px;margin:10px 0;background:#17150f}
+.message-item.admin-reply{border-color:#92752e;background:#211b0d}
+.message-meta{font-size:12px;color:#d7b85d;margin-bottom:7px}
+.message-text{white-space:pre-wrap;line-height:1.5}
+.whatsapp-float{position:fixed;right:18px;bottom:18px;z-index:40;border-radius:999px;padding:13px 18px;text-decoration:none;color:#101010;font-weight:bold;background:linear-gradient(135deg,#f5dc8a,#c99a2b);box-shadow:0 5px 22px #000b;border:1px solid #ffe49b}
+@media(max-width:600px){.founder-card{grid-template-columns:1fr;text-align:center}.founder-photo{margin:auto}.whatsapp-float{right:10px;bottom:10px;padding:11px 14px;font-size:13px}}
+
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header>
+<h1>KASHI GROWTH ACADEMY</h1>
+<p>Amazon Learning Academy</p>
+<p>Learn Together. Grow Together.</p>
+<p>Founded by Kashif Nawaz</p>
+</header>
+
+<div id="welcomeOverlay" class="welcome-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+ <div class="welcome-panel">
+  <div class="welcome-kicker">KASHI GROWTH ACADEMY</div>
+  <h2 id="welcomeTitle">Welcome!</h2>
+  <div class="welcome-slide" id="welcomeSlide">
+   <p>Yahan aap Amazon business ko step by step seekhenge. Har lesson par focus karein aur apni skills ko grow karein.</p>
+  </div>
+  <div class="market-decoration">
+   <span class="market-chip">📈 Business Growth</span>
+   <span class="market-chip">📦 Product & Orders</span>
+   <span class="market-chip">🎯 Step-by-step Learning</span>
+  </div>
+  <button id="welcomeNext" onclick="nextWelcomeSlide()">Continue</button>
+  <button class="secondary" onclick="closeWelcome()">Skip</button>
+ </div>
+</div>
+
+<main>
+<section class="card founder-card">
+ <img class="founder-photo" src="founder-photo.jpg" alt="Kashif Nawaz — Founder" onerror="this.style.display='none';this.parentElement.classList.add('no-photo')">
+ <div>
+  <h2>Kashif Nawaz</h2>
+  <p><b>Founder — Kashi Growth Academy</b></p>
+  <p class="small">Learn Together. Grow Together. Hamara maqsad Amazon business ki learning ko asaan, practical aur step-by-step banana hai.</p>
+ </div>
+</section>
+<div id="message" class="hidden"></div>
+
+<section id="auth" class="card">
+<h2>Student Login / Registration</h2>
+<p class="small">Apna account banayein ya pehle se bane account mein login karein.</p>
+<input id="name" placeholder="Full name (registration ke liye)">
+<input id="email" type="email" placeholder="Email address">
+<input id="password" type="password" placeholder="Password (kam az kam 6 characters)">
+<button onclick="signup()">Create Student Account</button>
+<button class="secondary" onclick="login()">Login</button>
+</section>
+
+<section id="academy" class="hidden">
+<div class="card">
+<h2 id="welcome">Welcome</h2>
+<button class="secondary" onclick="logout()">Logout</button>
+<h3>Your Learning Progress</h3>
+<div class="progress"><div id="progressBar"></div></div>
+<p id="progressText" class="small">0 of 10 lessons completed</p>
+</div>
+
+<section id="studentMessages" class="card hidden">
+ <h2>Teacher se Rabta Karein</h2>
+ <p class="small">Apna sawal ya learning problem yahan bhejein. Teacher ka jawab isi jagah nazar aayega.</p>
+ <textarea id="studentMessageText" placeholder="Apna sawal yahan likhein..."></textarea>
+ <button onclick="sendStudentMessage()">Message Send Karein</button>
+ <div id="studentMessageList"></div>
+</section>
+
+<section id="adminDashboard" class="card hidden">
+<h2>Teacher / Admin Dashboard</h2>
+<p class="small">Yeh dashboard sirf admin account ke liye hai.</p>
+<button onclick="loadAdminDashboard();loadAdminMessages()">Refresh Dashboard</button>
+<div id="adminMessage" class="small"></div>
+<div class="stat-grid">
+<div class="stat">Total Accounts<strong id="totalStudents">0</strong></div>
+<div class="stat">Lessons Completed<strong id="totalCompletions">0</strong></div>
+<div class="stat">Quiz Attempts<strong id="totalAttempts">0</strong></div>
+</div>
+<div class="admin-section">
+<h3>Student Profiles & Progress</h3>
+<div class="admin-table-wrap">
+<table class="admin-table">
+<thead><tr><th>Student Name</th><th>Registration Date</th><th>Lessons Completed</th><th>Progress</th></tr></thead>
+<tbody id="studentRows"><tr><td colspan="4">Loading...</td></tr></tbody>
+</table>
+</div>
+</div>
+<div class="admin-section">
+<h3>Quiz Results</h3>
+<div class="admin-table-wrap">
+<table class="admin-table">
+<thead><tr><th>Student</th><th>Lesson</th><th>Score</th><th>Result</th><th>Attempt Date</th></tr></thead>
+<tbody id="quizRows"><tr><td colspan="5">Loading...</td></tr></tbody>
+</table>
+</div>
+</div>
+<div class="admin-section">
+ <h3>Student Messages & Teacher Replies</h3>
+ <p class="small">Students ke sawalat yahan dekhein aur jawab dein.</p>
+ <div id="adminMessageInbox">Messages load ho rahe hain...</div>
+</div>
+</section>
+
+<div class="market-banner" aria-label="Academy highlights">
+ <div class="banner-track">
+  <div class="banner-panel"><h3>📈 Learn. Analyze. Grow.</h3><p>Market research, pricing aur profit ko samajh kar apne Amazon business decisions behtar banayein.</p></div>
+  <div class="banner-panel"><h3>📦 From Product to Customer</h3><p>Product sourcing, listing, fulfillment aur orders ka safar step by step seekhein.</p></div>
+  <div class="banner-panel"><h3>🏆 Your Progress, Your Growth</h3><p>Har quiz pass karein, agla lesson unlock karein aur apni learning progress track karein.</p></div>
+ </div>
+</div>
+
+<div class="card">
+<h2>Amazon Learning Course — 10 Lessons</h2>
+<p>Har lesson ko detail se parhein. Quiz mein 5 mein se kam az kam 4 jawab sahi dene par lesson complete hoga aur agla lesson unlock hoga.</p>
+<div id="lessons"></div>
+</div>
+<div id="lessonArea" class="card hidden"></div>
+</section>
+</main>
+
+<a class="whatsapp-float" href="https://wa.me/923077996026" target="_blank" rel="noopener">WhatsApp: 03077996026</a>
+<footer>Kashi Growth Academy • Learn Together. Grow Together.</footer>
+
+<script>
+const SUPABASE_URL="https://uzaujcficpdgtvwyueei.supabase.co";
+const SUPABASE_KEY="sb_publishable_yvzHpNuuW6Vf-XtzejrkxA_kd_wHYd7";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let currentUser=null;
+let currentRole="student";
+let completed=[];
+let welcomeSlideIndex=0;
+const welcomeSlides=[
+ "Yahan aap Amazon business ko step by step seekhenge. Har lesson par focus karein aur apni skills ko grow karein.",
+ "Product research se le kar listing, pricing aur advertising tak practical concepts seekhein.",
+ "Quiz pass karein, agla lesson unlock karein aur apni progress se apni growth dekhein."
+];
+let currentLesson=null;
+
+const course=[
+{
+id:1,title:"Lesson 1 — Amazon Introduction",
+body:`
+<h3>1. Amazon kya hai?</h3>
+<p>Amazon duniya ke mashhoor e-commerce platforms mein se ek hai. E-commerce ka matlab internet ke zariye products khareedna aur bechna hai. Amazon par customers products search karte hain, prices compare karte hain aur orders place karte hain.</p>
+<h3>2. Amazon marketplace kaise kaam karta hai?</h3>
+<p>Seller apna product Amazon par list karta hai. Customer product dekhta hai aur order karta hai. Order ki delivery seller khud bhi kar sakta hai ya Amazon ki fulfillment service use kar sakta hai.</p>
+<h3>3. Important terms</h3>
+<ul>
+<li><b>Seller:</b> Woh shakhs ya business jo product bechta hai.</li>
+<li><b>Buyer:</b> Woh customer jo product khareedta hai.</li>
+<li><b>Marketplace:</b> Online jagah jahan buyers aur sellers milte hain.</li>
+<li><b>Inventory:</b> Business ka available stock.</li>
+<li><b>Listing:</b> Amazon par product ka page.</li>
+<li><b>Order:</b> Customer ki purchase request.</li>
+<li><b>Revenue:</b> Sales se hasil hone wali total amount.</li>
+<li><b>Profit:</b> Tamam expenses minus karne ke baad bachne wali amount.</li>
+</ul>
+<h3>4. Amazon seller ki zimmedariyan</h3>
+<p>Seller ko product select karna, quality check karna, price set karna, listing banana, customer service aur business expenses manage karne hote hain.</p>
+<h3>5. Practical example</h3>
+<p>Sochiye aap handmade crochet bag banate hain. Aap product ki photos lete hain, title aur description likhte hain, price set karte hain aur Amazon par listing banate hain. Customer order karta hai aur product us tak deliver hota hai. Ye Amazon selling ka basic example hai.</p>
+<h3>6. Amazon business ki reality</h3>
+<p>Amazon business mein research, investment, planning aur patience ki zaroorat hoti hai. Har product successful nahi hota aur sales guaranteed nahi hoti. Business shuru karne se pehle marketplace ki policies, fees aur local legal requirements samajhna zaroori hai.</p>
+<h3>Lesson Summary</h3>
+<p>Amazon ek marketplace hai. Seller product offer karta hai, buyer purchase karta hai, aur seller ko product, listing, stock, delivery aur customer service manage karni hoti hai.</p>`,
+quiz:[
+["Amazon kis qisam ka platform hai?",["Online marketplace","Bank","School"],0],
+["Inventory ka matlab kya hai?",["Available stock","Advertisement","Customer review"],0],
+["Listing kya hoti hai?",["Product ka online page","Seller password","Delivery van"],0],
+["Profit kaise calculate hota hai?",["Revenue minus expenses","Sirf sales","Sirf product cost"],0],
+["Kya Amazon par success guaranteed hai?",["Nahi","Haan, hamesha","Har product par"],0]
+]
+},
+{
+id:2,title:"Lesson 2 — Seller Account Setup",
+body:`
+<h3>1. Seller account kya hota hai?</h3>
+<p>Amazon Seller Central woh online dashboard hai jahan seller apna business operate karta hai. Yahan se listings, orders, inventory, payments aur advertising manage ki ja sakti hai.</p>
+<h3>2. Account banane se pehle tayyari</h3>
+<ul>
+<li>Valid email address aur phone number.</li>
+<li>Identity verification ke liye required documents.</li>
+<li>Amazon ki requirements ke mutabiq payment aur deposit information.</li>
+<li>Business ya individual details, jo aapki situation par apply karti hon.</li>
+<li>Tax information, marketplace aur country ke rules ke mutabiq.</li>
+</ul>
+<h3>3. Registration ka basic process</h3>
+<ol>
+<li>Apne target marketplace ki official Amazon seller website open karein.</li>
+<li>Registration instructions aur fees parhein.</li>
+<li>Apni real aur accurate information enter karein.</li>
+<li>Required documents submit karein.</li>
+<li>Amazon ki identity verification complete karein.</li>
+<li>Account approval aur Seller Central access ka intezar karein.</li>
+</ol>
+<h3>4. Seller Central ke important sections</h3>
+<ul>
+<li><b>Catalog:</b> Products aur listings manage karna.</li>
+<li><b>Inventory:</b> Available stock dekhna.</li>
+<li><b>Orders:</b> Customer orders manage karna.</li>
+<li><b>Advertising:</b> Sponsored ads manage karna.</li>
+<li><b>Payments:</b> Payouts aur transactions dekhna.</li>
+<li><b>Account Health:</b> Policy compliance aur account status check karna.</li>
+</ul>
+<h3>5. Common mistakes</h3>
+<p>Fake documents, ghalat address, duplicate accounts, kisi aur ki identity ka istemal aur policies ko ignore karna serious problems paida kar sakta hai. Hamesha accurate information dein aur official Amazon instructions follow karein.</p>
+<h3>Lesson Summary</h3>
+<p>Seller account business ka control center hai. Registration se pehle documents, marketplace, fees aur policies samajhna zaroori hai.</p>`,
+quiz:[
+["Seller Central kis ke liye hota hai?",["Amazon seller","Buyer only","Courier only"],0],
+["Registration mein kaunsi information deni chahiye?",["Accurate real information","Fake information","Random details"],0],
+["Inventory section kis kaam aata hai?",["Stock manage karne","Weather dekhne","Email likhne"],0],
+["Account Health kya dikhata hai?",["Account status aur policy performance","Product colour","Personal photos"],0],
+["Seller fees kahan check karni chahiye?",["Official Amazon website","Random social post","Guess se"],0]
+]
+},
+{
+id:3,title:"Lesson 3 — Product Research",
+body:`
+<h3>1. Product research kya hai?</h3>
+<p>Product research ka matlab market ko study karke aisa product identify karna hai jise customers ki demand ho aur jisme business ke liye munasib profit ka chance ho.</p>
+<h3>2. Demand</h3>
+<p>Demand se murad customers ki product khareedne ki dilchaspi hai. Search trends, sales estimates aur customer reviews se market interest samajhne mein madad mil sakti hai. Kisi ek tool ka estimate final proof nahi hota.</p>
+<h3>3. Competition</h3>
+<p>Competition ka matlab doosre sellers aur similar products ki tadaad aur strength hai. Reviews, prices, product quality, images aur listing quality ka muqabla karein.</p>
+<h3>4. Product selection checklist</h3>
+<ul>
+<li>Customer ki real problem solve karta ho.</li>
+<li>Product ki demand ka evidence ho.</li>
+<li>Competition ko samajhna mumkin ho.</li>
+<li>Shipping aur storage manageable hon.</li>
+<li>Product restricted ya prohibited category mein na ho.</li>
+<li>Quality aur differentiation ka clear plan ho.</li>
+</ul>
+<h3>5. Profit ka basic example</h3>
+<p>Misal ke taur par selling price $30 hai. Product cost $10, shipping $4, marketplace fees $5 aur packaging $1 hain. Estimated profit $10 bachta hai. Ye sirf learning example hai; asal fees, taxes, returns aur doosre costs verify karna zaroori hai.</p>
+<h3>6. Research tools</h3>
+<p>Amazon search suggestions, Best Sellers pages, product reviews aur marketplace data research mein madad karte hain. Third-party research tools ke estimates ko verify karein.</p>
+<h3>7. Common mistakes</h3>
+<p>Sirf high sales dekh kar product select na karein. Copyright, trademark, patents, restricted products aur seasonality ko ignore na karein. Competitor ki listing copy karna bhi sahi strategy nahi.</p>
+<h3>Lesson Summary</h3>
+<p>Achhi product research demand, competition, costs, customer needs aur policy checks ko mila kar ki jati hai.</p>`,
+quiz:[
+["Product research ka maqsad kya hai?",["Suitable product identify karna","Password banana","Courier hire karna"],0],
+["Demand ka matlab?",["Customer interest","Product colour","Seller address"],0],
+["Competition kya batati hai?",["Market mein doosre sellers","Bank balance","Account password"],0],
+["Profit calculate karte waqt kya minus hota hai?",["Business costs aur fees","Sirf product name","Reviews"],0],
+["Kya third-party estimates ko verify karna chahiye?",["Haan","Nahi","Kabhi nahi"],0]
+]
+},
+{
+id:4,title:"Lesson 4 — Product Sourcing & Suppliers",
+body:`
+<h3>1. Product sourcing kya hai?</h3>
+<p>Product sourcing ka matlab apne business ke liye product ya raw material dhoondhna aur supplier se purchase karna hai. Supplier manufacturer, wholesaler ya authorized distributor ho sakta hai.</p>
+<h3>2. Supplier dhoondhne ke tareeqe</h3>
+<ul>
+<li>Trade shows aur industry exhibitions.</li>
+<li>Verified wholesale directories.</li>
+<li>Manufacturers ki official websites.</li>
+<li>Authorized distributors.</li>
+<li>Professional business networks.</li>
+</ul>
+<h3>3. Supplier ko evaluate karna</h3>
+<p>Supplier ki business history, communication, product quality, sample availability, minimum order quantity, production capacity aur delivery timeline check karein.</p>
+<h3>4. Sample order kyun zaroori hai?</h3>
+<p>Bulk order se pehle sample mangwana product quality, size, material, colour aur packaging inspect karne ka mauqa deta hai. Sample ko apni requirements ke mutabiq test karein.</p>
+<h3>5. Supplier se kya sawal karein?</h3>
+<ul>
+<li>Per unit price kya hai?</li>
+<li>Minimum order quantity kitni hai?</li>
+<li>Sample ki cost aur delivery kya hai?</li>
+<li>Production time kitna hai?</li>
+<li>Defective products ki policy kya hai?</li>
+<li>Packaging aur labeling ki facility hai?</li>
+</ul>
+<h3>6. Total landed cost</h3>
+<p>Sirf factory price ko cost na samjhein. Product price, shipping, customs duties, taxes, inspection, packaging aur doosre applicable expenses mila kar total landed cost calculate karein.</p>
+<h3>7. Safety aur documentation</h3>
+<p>Supplier invoices, purchase records aur product compliance documents sambhal kar rakhein. Branded goods ke liye authenticity aur authorization verify karein. Counterfeit products se door rahen.</p>
+<h3>Lesson Summary</h3>
+<p>Reliable supplier, quality sample, clear written terms aur complete cost calculation successful sourcing ke bunyadi parts hain.</p>`,
+quiz:[
+["Product sourcing ka matlab?",["Supplier se product hasil karna","Ads chalana","Review likhna"],0],
+["Bulk order se pehle kya mangwana behtar hai?",["Sample","Fake invoice","Random photo"],0],
+["MOQ ka matlab kya hai?",["Minimum Order Quantity","Maximum Online Quality","Monthly Order Quote"],0],
+["Landed cost mein kya shamil hota hai?",["Product aur related delivery/import costs","Sirf logo","Sirf title"],0],
+["Supplier documents kyun sambhalne chahiye?",["Business records aur verification ke liye","Website colour ke liye","Quiz ke liye"],0]
+]
+},
+{
+id:5,title:"Lesson 5 — FBA vs FBM",
+body:`
+<h3>1. FBA kya hai?</h3>
+<p>FBA ka full form Fulfillment by Amazon hai. Is model mein seller eligible inventory Amazon ke fulfillment centers bhejta hai. Amazon apni service ke mutabiq storage, packing, shipping aur customer service ke kuch parts handle karta hai.</p>
+<h3>2. FBM kya hai?</h3>
+<p>FBM ka full form Fulfillment by Merchant hai. Is model mein seller apne stock, packing, shipping aur customer service ki zimmedari khud ya apne service provider ke zariye sambhalta hai.</p>
+<h3>3. FBA ke possible benefits</h3>
+<ul>
+<li>Amazon fulfillment network ka use.</li>
+<li>Shipping aur packing ka operational burden kam ho sakta hai.</li>
+<li>Eligible offers ko Prime-related benefits mil sakte hain.</li>
+</ul>
+<h3>4. FBA ke possible costs</h3>
+<p>Fulfillment fees, storage fees, aged inventory fees, removal aur returns se related charges ho sakte hain. Fees product size, weight, category aur marketplace ke mutabiq change hoti hain.</p>
+<h3>5. FBM ke possible benefits</h3>
+<ul>
+<li>Inventory aur packaging par zyada direct control.</li>
+<li>Apne warehouse ya existing shipping setup ka use.</li>
+<li>Kuch products ke liye cost effective ho sakta hai.</li>
+</ul>
+<h3>6. FBM ki responsibilities</h3>
+<p>Seller ko delivery promises, tracking, customer messages, returns aur Amazon ki performance requirements khud manage karni hoti hain.</p>
+<h3>7. Kis model ka selection karein?</h3>
+<p>Product size, weight, sales volume, storage cost, delivery location aur apni operational capacity compare karein. Amazon revenue calculator aur official fee pages se estimated cost check karein.</p>
+<h3>Lesson Summary</h3>
+<p>FBA mein Amazon fulfillment ke kuch kaam karta hai; FBM mein seller khud fulfillment manage karta hai. Dono models ke costs aur responsibilities samajh kar decision lein.</p>`,
+quiz:[
+["FBA ka full form?",["Fulfillment by Amazon","Fast Business Account","Free Buyer Access"],0],
+["FBM mein fulfillment kaun manage karta hai?",["Seller","Customer","Bank"],0],
+["FBA mein kaunsi fee ho sakti hai?",["Storage fee","School fee","Internet exam fee"],0],
+["FBM seller ki responsibility kya hai?",["Shipping aur order handling","Amazon factory banana","Buyer account banana"],0],
+["FBA ya FBM select karte waqt kya compare karein?",["Costs aur operational needs","Sirf logo","Sirf product colour"],0]
+]
+},
+{
+id:6,title:"Lesson 6 — Product Listing",
+body:`
+<h3>1. Product listing kya hai?</h3>
+<p>Listing Amazon par aapke product ka sales page hota hai. Customer isi page par title, images, features, price aur product details dekh kar purchase decision leta hai.</p>
+<h3>2. Product title</h3>
+<p>Title clear, readable aur accurate hona chahiye. Brand, product type, important feature, size ya material jaisi relevant details add ki ja sakti hain. Marketplace ki title policies follow karein.</p>
+<h3>3. Product images</h3>
+<ul>
+<li>Main image product ko clearly show kare.</li>
+<li>High quality aur accurate photos use karein.</li>
+<li>Different angles aur useful details dikhayein.</li>
+<li>Product ke actual colour aur size ko represent karein.</li>
+<li>Image rules aur category requirements check karein.</li>
+</ul>
+<h3>4. Bullet points</h3>
+<p>Bullet points mein product ke important features aur customer benefits explain karein. Har point clear aur factual ho. Unsupported medical ya performance claims na karein.</p>
+<h3>5. Description</h3>
+<p>Description mein material, dimensions, use, care instructions aur product ki additional details samjhai ja sakti hain. Customer ko woh information dein jo purchase decision mein madad kare.</p>
+<h3>6. Variation aur attributes</h3>
+<p>Jahan Amazon allow kare, size, colour ya doosri valid variations ko sahi parent-child structure mein organize karein. Ghalat variation relationship na banayein.</p>
+<h3>7. Crochet bag example</h3>
+<p>Title: Handmade Crochet Tote Bag — Boho Shoulder Bag for Everyday Use. Bullet points mein material, approximate dimensions, care instructions aur storage capacity ki accurate details di ja sakti hain.</p>
+<h3>Lesson Summary</h3>
+<p>Strong listing clear title, accurate images, useful bullet points, detailed description aur correct product information par mabni hoti hai.</p>`,
+quiz:[
+["Listing ka main purpose?",["Customer ko product samjhana","Password store karna","Courier hire karna"],0],
+["Product images kaisi honi chahiye?",["Clear aur accurate","Unrelated","Misleading"],0],
+["Bullet points mein kya likhna chahiye?",["Important features aur benefits","Fake reviews","Personal password"],0],
+["Product description mein kya hona chahiye?",["Accurate product details","Unverified claims","Random text"],0],
+["Product variation kab banani chahiye?",["Jab valid aur policy-compliant ho","Har unrelated product ke liye","Sirf reviews barhane ke liye"],0]
+]
+},
+{
+id:7,title:"Lesson 7 — Keyword Research & SEO",
+body:`
+<h3>1. Keyword kya hai?</h3>
+<p>Keyword woh word ya phrase hai jo customer Amazon search bar mein product dhoondhne ke liye type karta hai. Misal: crochet tote bag, handmade shoulder bag.</p>
+<h3>2. Keyword research kyun zaroori hai?</h3>
+<p>Relevant keywords se seller ko customer ki search language samajhne aur listing ko relevant searches ke liye optimize karne mein madad milti hai.</p>
+<h3>3. Short-tail aur long-tail keywords</h3>
+<ul>
+<li><b>Short-tail:</b> Chhota aur broad phrase, jaise tote bag.</li>
+<li><b>Long-tail:</b> Zyada specific phrase, jaise handmade crochet tote bag for women.</li>
+</ul>
+<h3>4. Keyword research process</h3>
+<ol>
+<li>Apne product ke main words likhein.</li>
+<li>Amazon search suggestions observe karein.</li>
+<li>Competitor listings aur customer language study karein.</li>
+<li>Relevant aur irrelevant terms alag karein.</li>
+<li>Keywords ko naturally title, bullets aur description mein use karein.</li>
+</ol>
+<h3>5. Backend search terms</h3>
+<p>Seller Central mein available backend search term fields relevant additional words ke liye use ho sakte hain. Current character limits aur rules marketplace ke mutabiq verify karein. Irrelevant repetition aur competitor brand names ka ghalat use na karein.</p>
+<h3>6. SEO ki common mistakes</h3>
+<p>Keyword stuffing, misleading terms, irrelevant search phrases aur competitor brand names ka unauthorized use avoid karein. Readability aur accuracy ko priority dein.</p>
+<h3>Lesson Summary</h3>
+<p>Keyword research customer ki search language samajhne ka process hai. Relevant terms ko natural aur policy-compliant tareeqe se listing mein use karein.</p>`,
+quiz:[
+["Keyword kya hota hai?",["Customer ka search phrase","Seller ka password","Shipping label"],0],
+["Long-tail keyword ki example?",["Handmade crochet tote bag for women","Bag","Product"],0],
+["Keyword research ka source kya ho sakta hai?",["Amazon search suggestions","Random passwords","Bank statement"],0],
+["Keyword stuffing kya hai?",["Keywords ki unnatural repetition","Product packaging","Order tracking"],0],
+["Backend search terms mein kya use karna chahiye?",["Relevant additional terms","Competitor ke private details","Random words"],0]
+]
+},
+{
+id:8,title:"Lesson 8 — Pricing & Profit Calculation",
+body:`
+<h3>1. Revenue aur profit ka farq</h3>
+<p>Revenue total sales amount hoti hai. Profit woh amount hai jo business ke tamam relevant expenses minus karne ke baad bachta hai.</p>
+<h3>2. Important costs</h3>
+<ul>
+<li>Product purchase ya manufacturing cost.</li>
+<li>Shipping aur import-related expenses.</li>
+<li>Amazon referral aur fulfillment fees, jahan apply hon.</li>
+<li>Storage, packaging aur labeling.</li>
+<li>Advertising expenses.</li>
+<li>Returns, refunds aur damaged stock ka impact.</li>
+<li>Taxes aur doosre business expenses.</li>
+</ul>
+<h3>3. Simple profit formula</h3>
+<p><b>Estimated Profit = Selling Revenue − Total Costs</b></p>
+<p><b>Profit Margin = Profit ÷ Revenue × 100</b></p>
+<h3>4. Example</h3>
+<p>Product selling price $30 hai. Product cost $10, shipping $4, marketplace fees $5, packaging $1 aur advertising cost $3 hai. Total costs $23 hain. Estimated profit $7 hai. Profit margin 7 ÷ 30 × 100 = 23.3% ke qareeb hai.</p>
+<h3>5. Break-even point</h3>
+<p>Break-even woh point hai jahan revenue aur total costs barabar hon. Is point par na profit hota hai na loss. Apni pricing set karte waqt break-even samajhna useful hai.</p>
+<h3>6. Pricing strategy</h3>
+<p>Competitor prices, product quality, customer value, fees aur apne profit target ko compare karein. Sirf sab se kam price rakhna hamesha best strategy nahi hoti.</p>
+<h3>7. Common mistakes</h3>
+<p>Hidden costs ignore na karein. Returns, advertising, storage aur taxes ko calculation se bahar rakhne se profit ka estimate ghalat ho sakta hai.</p>
+<h3>Lesson Summary</h3>
+<p>Pricing ka decision complete cost calculation, market comparison aur sustainable profit ko dekh kar karein.</p>`,
+quiz:[
+["Revenue kya hoti hai?",["Total sales amount","Net profit only","Shipping fee"],0],
+["Profit ka formula?",["Revenue minus total costs","Revenue plus password","Orders multiplied by photos"],0],
+["Profit margin ka formula?",["Profit divided by revenue × 100","Cost plus stock","Price minus title"],0],
+["Break-even point par kya hota hai?",["Revenue aur costs barabar","Hamesha double profit","Zero sales only"],0],
+["Profit calculate karte waqt advertising cost include karni chahiye?",["Haan","Nahi","Kabhi nahi"],0]
+]
+},
+{
+id:9,title:"Lesson 9 — Amazon PPC Advertising",
+body:`
+<h3>1. PPC kya hai?</h3>
+<p>PPC ka full form Pay Per Click hai. Amazon Sponsored Ads mein seller aam tor par ad click hone par pay karta hai. Ad impressions aur clicks ka result product, bid, competition aur relevance par depend karta hai.</p>
+<h3>2. Campaign aur ad groups</h3>
+<p>Campaign advertising setup hota hai jahan budget, targeting aur doosri settings manage hoti hain. Ad group ke andar advertised products aur targeting organize ki ja sakti hai.</p>
+<h3>3. Automatic aur manual targeting</h3>
+<ul>
+<li><b>Automatic targeting:</b> Amazon available signals ki madad se targeting karta hai.</li>
+<li><b>Manual targeting:</b> Seller khud keywords ya product targets select karta hai.</li>
+</ul>
+<h3>4. Important PPC terms</h3>
+<ul>
+<li><b>Impressions:</b> Ad kitni dafa show hua.</li>
+<li><b>Clicks:</b> Ad par kitni dafa click hua.</li>
+<li><b>CPC:</b> Cost Per Click.</li>
+<li><b>CTR:</b> Clicks divided by impressions × 100.</li>
+<li><b>ACOS:</b> Ad spend divided by ad sales × 100.</li>
+<li><b>ROAS:</b> Ad sales divided by ad spend.</li>
+<li><b>Budget:</b> Campaign ki spending limit.</li>
+<li><b>Bid:</b> Click ke liye offer ki gayi amount.</li>
+</ul>
+<h3>5. PPC campaign shuru karne ka basic process</h3>
+<ol>
+<li>Product listing aur stock ready karein.</li>
+<li>Relevant keywords aur customer searches samjhein.</li>
+<li>Budget aur bid carefully set karein.</li>
+<li>Campaign performance regularly monitor karein.</li>
+<li>Search term report aur results analyze karein.</li>
+<li>Irrelevant traffic ko manage karein aur useful targets optimize karein.</li>
+</ol>
+<h3>6. PPC ki reality</h3>
+<p>Advertising sales guarantee nahi karti. Agar product listing weak ho, price unsuitable ho ya demand kam ho to ads ka result bhi weak ho sakta hai. Ads par spending se pehle profit margin samajhna zaroori hai.</p>
+<h3>Lesson Summary</h3>
+<p>PPC paid advertising ka system hai. Budget, bids, keywords aur performance metrics ko samajh kar campaigns optimize karein.</p>`,
+quiz:[
+["PPC ka full form?",["Pay Per Click","Product Price Cost","Payment Per Customer"],0],
+["CPC ka matlab?",["Cost Per Click","Customer Product Count","Campaign Price Code"],0],
+["ACOS kis cheez ka ratio hai?",["Ad spend aur ad sales","Shipping aur weight","Stock aur size"],0],
+["Automatic targeting mein targeting kaun select karta hai?",["Amazon system","Courier","Customer manually"],0],
+["Kya PPC sales guarantee karta hai?",["Nahi","Haan hamesha","Har product par"],0]
+]
+},
+{
+id:10,title:"Lesson 10 — Orders, Customer Service & Business Growth",
+body:`
+<h3>1. Order management</h3>
+<p>Seller Central ke Orders section mein incoming orders, shipment status aur order-related information dekhi ja sakti hai. Orders ko time par process karna aur marketplace ke delivery rules follow karna zaroori hai.</p>
+<h3>2. Shipping aur tracking</h3>
+<p>FBM seller ko correct packaging, shipping method aur tracking information manage karni hoti hai. FBA mein Amazon fulfillment process handle karta hai, lekin seller ko inventory aur shipment requirements follow karni hoti hain.</p>
+<h3>3. Customer service</h3>
+<ul>
+<li>Customer ke sawal ka professional jawab dein.</li>
+<li>Product ki accurate information provide karein.</li>
+<li>Complaints ko calmly handle karein.</li>
+<li>Return aur refund policies follow karein.</li>
+<li>Customer se fake ya incentivized review na maangein.</li>
+</ul>
+<h3>4. Returns aur refunds</h3>
+<p>Returns ki wajah samajhna useful hota hai. Product quality, wrong description, damaged packaging ya size expectations ka issue ho sakta hai. Return data ko use karke product aur listing improve karein.</p>
+<h3>5. Account Health</h3>
+<p>Seller Central mein Account Health aur policy notifications regularly check karein. Policy violations, late shipment, cancellations aur customer experience metrics account performance ko affect kar sakte hain. Current marketplace standards follow karein.</p>
+<h3>6. Business performance analysis</h3>
+<p>Sales, conversion, advertising cost, returns, profit margin aur inventory levels ko regularly review karein. Sirf sales barhne ka matlab profit barhna nahi hota.</p>
+<h3>7. Business growth</h3>
+<ol>
+<li>Existing product ki quality improve karein.</li>
+<li>Customer feedback aur returns analyze karein.</li>
+<li>Inventory ko demand ke mutabiq plan karein.</li>
+<li>Profitable products par focus karein.</li>
+<li>New products launch karne se pehle research karein.</li>
+<li>Business records aur cash flow maintain karein.</li>
+</ol>
+<h3>8. Professional seller habits</h3>
+<p>Accurate records rakhein, policies follow karein, customer ko honest information dein aur business decisions data ki bunyaad par karein. Sustainable growth ke liye patience aur continuous learning zaroori hai.</p>
+<h3>Final Course Summary</h3>
+<p>Aap ne Amazon introduction se le kar account setup, product research, sourcing, fulfillment, listing, SEO, pricing, PPC aur business operations tak 10 important topics study kiye. Ab in concepts ko practical exercises aur official Amazon resources ke saath apply karein.</p>`,
+quiz:[
+["Order management kahan se hota hai?",["Seller Central Orders section","Photo gallery","Social media only"],0],
+["Customer complaint ka jawab kaisa hona chahiye?",["Professional aur helpful","Rude","Ignore karna"],0],
+["Returns data se kya seekh sakte hain?",["Product aur listing improve karna","Password banana","Ads band karna hamesha"],0],
+["Business growth ke liye kya analyze karna chahiye?",["Sales, costs aur profit","Sirf likes","Sirf photos"],0],
+["Kya fake reviews lena sahi hai?",["Nahi","Haan","Har waqt"],0]
+]
+}
+];
+
+function notify(message){
+ const box=document.getElementById("message");
+ box.textContent=message;
+ box.classList.remove("hidden");
+ window.scrollTo(0,0);
+}
+function clearNotify(){document.getElementById("message").classList.add("hidden")}
+function escapeHtml(value){
+ return String(value??"").replace(/[&<>"']/g,char=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+ }[char]));
+}
+function formatDate(value){
+ if(!value)return "—";
+ const date=new Date(value);
+ return Number.isNaN(date.getTime())?"—":date.toLocaleDateString();
+}
+
+function showWelcome(displayName){
+  const overlay=document.getElementById("welcomeOverlay");
+  document.getElementById("welcomeTitle").textContent="Welcome, "+displayName+"!";
+  welcomeSlideIndex=0;
+  updateWelcomeSlide();
+  overlay.classList.remove("hidden");
+}
+function updateWelcomeSlide(){
+  const box=document.getElementById("welcomeSlide");
+  box.innerHTML="<p>"+welcomeSlides[welcomeSlideIndex]+"</p>";
+  const button=document.getElementById("welcomeNext");
+  button.textContent=welcomeSlideIndex===welcomeSlides.length-1?"Start Learning":"Next";
+}
+function nextWelcomeSlide(){
+  if(welcomeSlideIndex>=welcomeSlides.length-1){closeWelcome();return}
+  welcomeSlideIndex++;
+  updateWelcomeSlide();
+}
+function closeWelcome(){
+  document.getElementById("welcomeOverlay").classList.add("hidden");
+}
+
+async function signup(){
+ clearNotify();
+ const full_name=document.getElementById("name").value.trim();
+ const email=document.getElementById("email").value.trim();
+ const password=document.getElementById("password").value;
+ if(!full_name||!email||password.length<6){
+  notify("Name, valid email aur kam az kam 6 character password enter karein.");
+  return;
+ }
+ const {data,error}=await db.auth.signUp({
+  email,password,
+  options:{
+   data:{full_name},
+   emailRedirectTo:"https://kashi-growth-academy.kashifnawaz9810.workers.dev"
+  }
+ });
+ if(error){notify(error.message);return}
+ if(data.session){
+  notify("Account ban gaya! Academy load ho rahi hai.");
+  await startAcademy(data.user);
+ }else{
+  notify("Registration request ho gayi. Email confirmation check karein.");
+ }
+}
+
+async function login(){
+ clearNotify();
+ const email=document.getElementById("email").value.trim();
+ const password=document.getElementById("password").value;
+ const {data,error}=await db.auth.signInWithPassword({email,password});
+ if(error){notify(error.message);return}
+ await startAcademy(data.user);
+}
+
+async function logout(){
+ await db.auth.signOut();
+ currentUser=null;
+ completed=[];
+ sessionStorage.clear();
+ document.getElementById("academy").classList.add("hidden");
+ document.getElementById("auth").classList.remove("hidden");
+ document.getElementById("lessonArea").classList.add("hidden");
+ document.getElementById("adminDashboard").classList.add("hidden");
+ notify("Aap logout ho gaye hain.");
+}
+
+async function startAcademy(user){
+  currentUser=user;
+  document.getElementById("auth").classList.add("hidden");
+  document.getElementById("academy").classList.remove("hidden");
+  const displayName=user.user_metadata?.full_name||user.email||"Student";
+  document.getElementById("welcome").textContent="Welcome, "+displayName;
+  document.getElementById("adminDashboard").classList.add("hidden");
+
+  // Role ko pehle verify karein, phir lessons render karein.
+  const {data:profile,error}=await db.from("profiles")
+    .select("role").eq("id",user.id).maybeSingle();
+  currentRole=(!error && profile && profile.role==="admin")?"admin":"student";
+
+  await loadProgress();
+  renderLessons();
+
+  if(currentRole==="admin"){
+    document.getElementById("studentMessages").classList.add("hidden");
+    document.getElementById("adminDashboard").classList.remove("hidden");
+    await loadAdminDashboard();
+    await loadAdminMessages();
+  }else{
+    document.getElementById("studentMessages").classList.remove("hidden");
+    await loadStudentMessages();
+  }
+
+  const welcomeKey="kga_welcome_"+user.id;
+  if(!sessionStorage.getItem(welcomeKey)){
+    sessionStorage.setItem(welcomeKey,"shown");
+    showWelcome(displayName);
+  }
+}
+
+async function loadProgress(){
+ const {data,error}=await db.from("lesson_progress")
+  .select("lesson_id,completed").eq("user_id",currentUser.id);
+ if(error){notify("Progress load nahi hui: "+error.message);return}
+ completed=(data||[]).filter(item=>item.completed).map(item=>Number(item.lesson_id));
+ updateProgress();
+}
+
+function updateProgress(){
+ const count=course.filter(item=>completed.includes(item.id)).length;
+ document.getElementById("progressBar").style.width=(count/10*100)+"%";
+ document.getElementById("progressText").textContent=count+" of 10 lessons completed";
+}
+
+function isLessonUnlocked(id){
+  if(currentRole==="admin")return true;
+  if(id===1)return true;
+  return completed.includes(id-1);
+}
+
+function renderLessons(){
+ const holder=document.getElementById("lessons");
+ holder.innerHTML="";
+ course.forEach(lesson=>{
+  const unlocked=isLessonUnlocked(lesson.id);
+  const done=completed.includes(lesson.id);
+  const div=document.createElement("div");
+  div.className="lesson";
+  const status=currentRole==="admin"?(done?"✅ Completed":"🔓 Admin Access — Open"):done?"✅ Completed":unlocked?"📘 Available":"🔒 Locked";
+  div.innerHTML="<h3>"+lesson.title+"</h3><p>"+status+"</p>";
+  const btn=document.createElement("button");
+  btn.textContent=!unlocked?"Pehle pichla lesson complete karein":currentRole==="admin"?"Open Lesson":done?"Review Lesson":"Open Lesson";
+  btn.disabled=!unlocked;
+  btn.onclick=()=>openLesson(lesson.id);
+  div.appendChild(btn);
+  holder.appendChild(div);
+ });
+}
+
+function openLesson(id){
+ if(!isLessonUnlocked(id)){
+  notify("Pehle pichla lesson pass karein. Us ke baad yeh lesson unlock hoga.");
+  return;
+ }
+ currentLesson=course.find(item=>item.id===id);
+ const area=document.getElementById("lessonArea");
+ area.classList.remove("hidden");
+ area.innerHTML=
+  "<h2>"+currentLesson.title+"</h2>"+
+  "<div class='lesson-content'>"+currentLesson.body+"</div>"+
+  "<hr><h3>Lesson Quiz</h3>"+
+  "<p class='small'>5 sawalat ke jawab dein. Pass hone ke liye kam az kam 4 sahi jawab zaroori hain.</p>"+
+  "<div id='quizForm'></div>"+
+  "<button onclick='submitQuiz()'>Submit Quiz</button>";
+ const form=document.getElementById("quizForm");
+ currentLesson.quiz.forEach((question,index)=>{
+  const div=document.createElement("div");
+  div.className="question";
+  let html="<b>"+(index+1)+". "+question[0]+"</b>";
+  question[1].forEach((choice,choiceIndex)=>{
+   html+="<label><input style='width:auto' type='radio' name='q"+index+"' value='"+choiceIndex+"'> "+choice+"</label>";
+  });
+  div.innerHTML=html;
+  form.appendChild(div);
+ });
+ area.scrollIntoView({behavior:"smooth"});
+}
+
+async function submitQuiz(){
+ if(!currentUser||!currentLesson)return;
+ let score=0;
+ for(let i=0;i<currentLesson.quiz.length;i++){
+  const selected=document.querySelector("input[name='q"+i+"']:checked");
+  if(!selected){notify("Meherbani karke tamam sawalon ke jawab dein.");return}
+  if(Number(selected.value)===currentLesson.quiz[i][2])score++;
+ }
+ const total=currentLesson.quiz.length;
+ const passed=score>=4;
+
+ const {error:quizError}=await db.from("quiz_attempts").insert({
+  user_id:currentUser.id,
+  lesson_id:currentLesson.id,
+  score,
+  total_questions:total
+ });
+ if(quizError){notify("Quiz result save nahi hua: "+quizError.message);return}
+
+ if(passed){
+  const {error}=await db.from("lesson_progress").upsert({
+   user_id:currentUser.id,
+   lesson_id:currentLesson.id,
+   completed:true,
+   updated_at:new Date().toISOString()
+  },{onConflict:"user_id,lesson_id"});
+  if(error){notify("Progress save nahi hui: "+error.message);return}
+  if(!completed.includes(currentLesson.id))completed.push(currentLesson.id);
+  updateProgress();
+  renderLessons();
+  if(currentLesson.id===10){
+   notify("Mubarak ho! Aap ne tamam 10 lessons complete kar liye! 🎉");
+  }else{
+   notify("Mubarak ho! Score "+score+"/"+total+". Lesson complete! Agla lesson unlock ho gaya.");
+  }
+ }else{
+  notify("Score "+score+"/"+total+". Pass hone ke liye 4 sahi jawab chahiye. Dobara parhein aur try karein.");
+ }
+}
+
+async function loadAdminDashboard(){
+ if(!currentUser)return;
+ const adminMessage=document.getElementById("adminMessage");
+ adminMessage.textContent="Dashboard load ho raha hai...";
+ document.getElementById("studentRows").innerHTML="<tr><td colspan='4'>Loading...</td></tr>";
+ document.getElementById("quizRows").innerHTML="<tr><td colspan='5'>Loading...</td></tr>";
+
+ const {data:myProfile,error:roleError}=await db.from("profiles")
+  .select("role").eq("id",currentUser.id).maybeSingle();
+ if(roleError||!myProfile||myProfile.role!=="admin"){
+  adminMessage.textContent="Admin access verify nahi ho saka.";
+  document.getElementById("adminDashboard").classList.add("hidden");
+  return;
+ }
+
+ const {data:profiles,error:profilesError}=await db.from("profiles")
+  .select("id,full_name,created_at").order("created_at",{ascending:false});
+ if(profilesError){adminMessage.textContent="Profiles load nahi huay: "+profilesError.message;return}
+
+ const {data:progress,error:progressError}=await db.from("lesson_progress")
+  .select("user_id,lesson_id,completed");
+ if(progressError){adminMessage.textContent="Progress load nahi hui: "+progressError.message;return}
+
+ const {data:attempts,error:attemptsError}=await db.from("quiz_attempts")
+  .select("user_id,lesson_id,score,total_questions,attempted_at")
+  .order("attempted_at",{ascending:false});
+ if(attemptsError){adminMessage.textContent="Quiz results load nahi huay: "+attemptsError.message;return}
+
+ const studentList=profiles||[];
+ const progressList=progress||[];
+ const attemptList=attempts||[];
+ const completedList=progressList.filter(item=>item.completed);
+
+ document.getElementById("totalStudents").textContent=studentList.length;
+ document.getElementById("totalCompletions").textContent=completedList.length;
+ document.getElementById("totalAttempts").textContent=attemptList.length;
+
+ const names={};
+ studentList.forEach(student=>{names[student.id]=student.full_name||"Student"});
+
+ const studentRows=document.getElementById("studentRows");
+ studentRows.innerHTML="";
+ if(!studentList.length){
+  studentRows.innerHTML="<tr><td colspan='4'>Abhi koi account registered nahi hai.</td></tr>";
+ }else{
+  studentList.forEach(student=>{
+   const count=progressList.filter(item=>item.user_id===student.id&&item.completed).length;
+   const row=document.createElement("tr");
+   row.innerHTML=
+    "<td>"+escapeHtml(student.full_name||"Student")+"</td>"+
+    "<td>"+escapeHtml(formatDate(student.created_at))+"</td>"+
+    "<td>"+count+" / 10</td>"+
+    "<td>"+Math.round(count/10*100)+"%</td>";
+   studentRows.appendChild(row);
+  });
+ }
+
+ const quizRows=document.getElementById("quizRows");
+ quizRows.innerHTML="";
+ if(!attemptList.length){
+  quizRows.innerHTML="<tr><td colspan='5'>Abhi koi quiz attempt nahi hua.</td></tr>";
+ }else{
+  attemptList.forEach(attempt=>{
+   const passed=Number(attempt.score)>=4;
+   const row=document.createElement("tr");
+   row.innerHTML=
+    "<td>"+escapeHtml(names[attempt.user_id]||"Student")+"</td>"+
+    "<td>Lesson "+escapeHtml(attempt.lesson_id)+"</td>"+
+    "<td>"+escapeHtml(attempt.score)+" / "+escapeHtml(attempt.total_questions)+"</td>"+
+    "<td class='status'>"+(passed?"Passed":"Not Passed")+"</td>"+
+    "<td>"+escapeHtml(formatDate(attempt.attempted_at))+"</td>";
+   quizRows.appendChild(row);
+  });
+ }
+ adminMessage.textContent="Dashboard update ho gaya.";
+}
+
+
+async function loadStudentMessages(){
+ const list=document.getElementById("studentMessageList");
+ if(!currentUser||!list)return;
+ list.innerHTML="<p class='small'>Messages load ho rahe hain...</p>";
+ const {data,error}=await db.from("teacher_messages").select("id,sender_role,message,created_at")
+  .eq("user_id",currentUser.id).order("created_at",{ascending:true});
+ if(error){list.innerHTML="<p class='small'>Message system setup nahi hua. Admin se database setup karwayein.</p>";return}
+ if(!data||!data.length){list.innerHTML="<p class='small'>Abhi koi message nahi. Apna sawal bhej sakte hain.</p>";return}
+ list.innerHTML=data.map(item=>`<div class="message-item ${item.sender_role==="admin"?"admin-reply":""}">
+  <div class="message-meta">${item.sender_role==="admin"?"Teacher":"Aap"} • ${escapeHtml(formatDate(item.created_at))}</div>
+  <div class="message-text">${escapeHtml(item.message)}</div></div>`).join("");
+}
+async function sendStudentMessage(){
+ const field=document.getElementById("studentMessageText");
+ const message=field.value.trim();
+ if(!message){notify("Pehle apna sawal likhein.");return}
+ const {error}=await db.from("teacher_messages").insert({user_id:currentUser.id,sender_role:"student",message});
+ if(error){notify("Message send nahi hua. Teacher message database setup check karein.");return}
+ field.value="";
+ notify("Aapka message teacher ko send ho gaya.");
+ await loadStudentMessages();
+}
+async function loadAdminMessages(){
+ const box=document.getElementById("adminMessageInbox");
+ if(!box||currentRole!=="admin")return;
+ box.innerHTML="<p class='small'>Messages load ho rahe hain...</p>";
+ const {data:messages,error}=await db.from("teacher_messages")
+  .select("id,user_id,sender_role,message,created_at").order("created_at",{ascending:true});
+ if(error){box.innerHTML="<p class='small'>Message table ya access policy setup nahi hai. Supabase setup zaroori hai.</p>";return}
+ if(!messages||!messages.length){box.innerHTML="<p class='small'>Abhi students ka koi message nahi aaya.</p>";return}
+ const {data:profiles}=await db.from("profiles").select("id,full_name");
+ const names={};(profiles||[]).forEach(p=>names[p.id]=p.full_name||"Student");
+ const grouped={};messages.forEach(m=>(grouped[m.user_id]??=[]).push(m));
+ box.innerHTML=Object.entries(grouped).map(([uid,items])=>`<div class="message-item">
+  <h3>${escapeHtml(names[uid]||"Student")}</h3>
+  ${items.map(m=>`<div class="message-item ${m.sender_role==="admin"?"admin-reply":""}">
+   <div class="message-meta">${m.sender_role==="admin"?"Teacher":"Student"} • ${escapeHtml(formatDate(m.created_at))}</div>
+   <div class="message-text">${escapeHtml(m.message)}</div></div>`).join("")}
+  <textarea id="reply-${uid}" placeholder="Is student ko jawab dein..."></textarea>
+  <button onclick="sendAdminReply('${uid}')">Reply Send Karein</button>
+ </div>`).join("");
+}
+async function sendAdminReply(userId){
+ const field=document.getElementById("reply-"+userId);
+ const message=field.value.trim();
+ if(!message){notify("Reply likhein.");return}
+ const {error}=await db.from("teacher_messages").insert({user_id:userId,sender_role:"admin",message});
+ if(error){notify("Reply send nahi hua. Database permissions check karein.");return}
+ notify("Teacher reply send ho gaya.");
+ await loadAdminMessages();
+}
+
+db.auth.getSession().then(({data,error})=>{
+ if(error){console.error(error.message);return}
+ if(data.session)startAcademy(data.session.user);
+});
+</script>
+</body>
+</html>
