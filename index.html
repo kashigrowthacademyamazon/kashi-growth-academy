@@ -819,13 +819,39 @@ async function signup(){
 }
 
 async function login(){
- clearNotify();
- const email=document.getElementById("email").value.trim();
- const password=document.getElementById("password").value;
- const {data,error}=await db.auth.signInWithPassword({email,password});
- if(error){notify(error.message);return}
- await startAcademy(data.user);
+ const button=document.querySelector('#auth button.secondary');
+ try{
+  clearNotify();
+  const email=document.getElementById("email")?.value.trim()||"";
+  const password=document.getElementById("password")?.value||"";
+  if(!email||!password){
+   notify("Apna email aur password dono enter karein.");
+   return;
+  }
+  if(!window.supabase||!db){
+   notify("Login service load nahi hui. Page refresh karein aur dobara try karein.");
+   return;
+  }
+  if(button){button.disabled=true;button.textContent="Logging in...";}
+  notify("Login check ho raha hai, thora intezar karein...");
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+  if(error){
+   notify("Login nahi hua: "+error.message);
+   return;
+  }
+  if(!data?.user){
+   notify("Login complete nahi hua. Dobara try karein.");
+   return;
+  }
+  await startAcademy(data.user);
+ }catch(error){
+  console.error("KGA login error:",error);
+  notify("Login mein masla aa gaya: "+(error?.message||"Unknown error")+". Page refresh karke dobara try karein.");
+ }finally{
+  if(button){button.disabled=false;button.textContent="Login";}
+ }
 }
+window.login=login;
 
 async function logout(){
  await db.auth.signOut();
