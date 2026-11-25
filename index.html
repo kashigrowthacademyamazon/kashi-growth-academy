@@ -250,6 +250,15 @@ header,main,.welcome-overlay{position:relative;z-index:1}
 <input id="password" type="password" placeholder="Password (kam az kam 6 characters)">
 <button onclick="signup()">Create Student Account</button>
 <button class="secondary" onclick="login()">Login</button>
+<button class="secondary" type="button" onclick="forgotPassword()">Forgot Password?</button>
+</section>
+
+<section id="resetPassword" class="card hidden">
+<h2>Set New Password</h2>
+<p class="small">Apne account ke liye naya password enter karein.</p>
+<input id="newPassword" type="password" autocomplete="new-password" placeholder="New password (kam az kam 6 characters)">
+<input id="confirmNewPassword" type="password" autocomplete="new-password" placeholder="Confirm new password">
+<button type="button" onclick="saveNewPassword()">Update Password</button>
 </section>
 
 <section id="academy" class="hidden">
@@ -853,6 +862,58 @@ async function login(){
 }
 window.login=login;
 
+async function forgotPassword(){
+ clearNotify();
+ const email=document.getElementById("email")?.value.trim()||"";
+ if(!email){
+  notify("Pehle Email address wale box mein apna registered email enter karein.");
+  document.getElementById("email")?.focus();
+  return;
+ }
+ if(!db){
+  notify("Password reset service load nahi hui. Page refresh karke dobara try karein.");
+  return;
+ }
+ try{
+  const {error}=await db.auth.resetPasswordForEmail(email,{
+   redirectTo:"https://kashi-growth-academy.kashifnawaz9810.workers.dev"
+  });
+  if(error){notify("Reset email nahi bheji ja saki: "+error.message);return}
+  notify("Password reset link aapki email par bhej diya gaya hai. Inbox aur Spam folder check karein.");
+ }catch(error){
+  console.error("KGA password reset error:",error);
+  notify("Password reset mein masla aa gaya: "+(error?.message||"Unknown error"));
+ }
+}
+
+async function saveNewPassword(){
+ clearNotify();
+ const password=document.getElementById("newPassword")?.value||"";
+ const confirm=document.getElementById("confirmNewPassword")?.value||"";
+ if(password.length<6){
+  notify("Naya password kam az kam 6 characters ka hona chahiye.");
+  return;
+ }
+ if(password!==confirm){
+  notify("Dono password match nahi kar rahe. Dobara check karein.");
+  return;
+ }
+ try{
+  const {error}=await db.auth.updateUser({password});
+  if(error){notify("Password update nahi hua: "+error.message);return}
+  await db.auth.signOut();
+  document.getElementById("resetPassword").classList.add("hidden");
+  document.getElementById("auth").classList.remove("hidden");
+  document.getElementById("newPassword").value="";
+  document.getElementById("confirmNewPassword").value="";
+  document.getElementById("password").value="";
+  notify("Password successfully change ho gaya! Ab naye password se login karein.");
+ }catch(error){
+  console.error("KGA save new password error:",error);
+  notify("Password update mein masla aa gaya: "+(error?.message||"Unknown error"));
+ }
+}
+
 async function logout(){
  await db.auth.signOut();
  currentUser=null;
@@ -1265,6 +1326,15 @@ async function sendAdminReply(){
  if(error){notify("Reply send nahi hua: "+error.message);return}
  input.value="";await loadAdminMessages();notify("Reply student ko bhej diya gaya.");
 }
+
+db.auth.onAuthStateChange((event)=>{
+ if(event==="PASSWORD_RECOVERY"){
+  document.getElementById("auth").classList.add("hidden");
+  document.getElementById("academy").classList.add("hidden");
+  document.getElementById("resetPassword").classList.remove("hidden");
+  notify("Email link verify ho gaya. Ab apna naya password set karein.");
+ }
+});
 
 db.auth.getSession().then(({data,error})=>{
  if(error){console.error(error.message);return}
