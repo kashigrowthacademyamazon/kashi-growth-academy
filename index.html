@@ -159,6 +159,16 @@ header,main,.welcome-overlay{position:relative;z-index:1}
 .certificate-card{text-align:center;border:1px solid #b58b27;background:linear-gradient(135deg,#1c1a14,#111d1c)}
 .certificate-mark{font-size:36px}.certificate-card h2{margin:8px 0;color:#f2d477}
 .certificate-card button:disabled{opacity:.65;cursor:not-allowed}
+.student-dashboard{border:1px solid #806326;background:linear-gradient(145deg,rgba(22,22,21,.98),rgba(8,13,16,.98))}
+.student-dashboard h2{margin-top:0;color:#f5d477}
+.student-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:16px 0}
+.student-stat{padding:14px;border:1px solid #514521;border-radius:10px;background:linear-gradient(145deg,#292515,#142022)}
+.student-stat span{display:block;color:#cfc6ac;font-size:12px}
+.student-stat strong{display:block;color:#f4d477;font-size:25px;margin-top:7px}
+.student-recent{padding:0;list-style:none;margin:12px 0}
+.student-recent li{padding:10px 12px;border-top:1px solid rgba(214,170,50,.2);color:#e3e1d8;font-size:13px}
+.student-recent small{display:block;color:#a9aa9e;margin-top:4px}
+.student-dashboard .next-lesson{background:linear-gradient(135deg,#f4d77d,#b98926);color:#17130a;padding:13px 18px}
 
 
 .lesson-sample-gallery{margin:18px 0 22px;padding:14px;border:1px solid rgba(212,175,55,.28);border-radius:14px;background:rgba(255,255,255,.025)}.lesson-sample-gallery h3{margin:0 0 12px;color:#f0d477;font-size:16px}.lesson-sample-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.lesson-sample-gallery h3{grid-column:1/-1}.lesson-sample-gallery figure{margin:0;min-width:0}.lesson-sample-gallery img{display:block;width:100%;height:130px;object-fit:cover;border-radius:9px;border:1px solid rgba(255,255,255,.12)}.lesson-sample-gallery figcaption{font-size:11px;color:#d6d0c1;margin-top:6px;text-align:center}@media(max-width:600px){.lesson-sample-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}.lesson-sample-gallery figure:last-child{grid-column:1/-1}.lesson-sample-gallery figure:last-child img{height:150px}}
@@ -269,6 +279,20 @@ header,main,.welcome-overlay{position:relative;z-index:1}
 <div class="progress"><div id="progressBar"></div></div>
 <p id="progressText" class="small">0 of 20 lessons completed</p>
 </div>
+
+<section id="studentDashboard" class="card student-dashboard hidden">
+ <div class="admin-heading"><div><span class="admin-kicker">YOUR LEARNING HUB</span><h2>Student Dashboard</h2><p class="small">Apni learning progress aur quiz performance yahan dekhein.</p></div><button class="secondary" type="button" onclick="loadStudentDashboard()">↻ Refresh</button></div>
+ <div class="student-stat-grid">
+  <div class="student-stat"><span>Completed Lessons</span><strong id="studentCompleted">0/20</strong></div>
+  <div class="student-stat"><span>Course Progress</span><strong id="studentPercent">0%</strong></div>
+  <div class="student-stat"><span>Quiz Attempts</span><strong id="studentAttempts">0</strong></div>
+  <div class="student-stat"><span>Average Quiz Score</span><strong id="studentAverage">—</strong></div>
+ </div>
+ <p id="studentNextText" class="small">Aapka agla lesson yahan show hoga.</p>
+ <button id="nextLessonButton" class="next-lesson" type="button" onclick="openNextLesson()">Continue Learning →</button>
+ <h3>Recent Quiz Activity</h3>
+ <ul id="studentRecent" class="student-recent"><li>Quiz activity load ho rahi hai...</li></ul>
+</section>
 
 <section id="certificateCard" class="card certificate-card">
  <div class="certificate-mark">🏆</div>
@@ -942,6 +966,13 @@ async function startAcademy(user){
   await loadProgress();
   renderLessons();
 
+  if(currentRole==="student"){
+    document.getElementById("studentDashboard").classList.remove("hidden");
+    await loadStudentDashboard();
+  }else{
+    document.getElementById("studentDashboard").classList.add("hidden");
+  }
+
   if(currentRole==="admin"){
     document.getElementById("adminDashboard").classList.remove("hidden");
     await loadAdminDashboard();
@@ -962,6 +993,66 @@ async function loadProgress(){
  if(error){notify("Progress load nahi hui: "+error.message);return}
  completed=(data||[]).filter(item=>item.completed).map(item=>Number(item.lesson_id));
  updateProgress();
+}
+
+function openNextLesson(){
+ const next=course.find(item=>!completed.includes(item.id));
+ if(!next){notify("Mubarak ho! Aap ne tamam lessons complete kar liye hain. 🎉");return}
+ openLesson(next.id);
+}
+
+async function loadStudentDashboard(){
+ if(!currentUser||currentRole!=="student")return;
+ const count=course.filter(item=>completed.includes(item.id)).length;
+ document.getElementById("studentCompleted").textContent=count+"/"+course.length;
+ document.getElementById("studentPercent").textContent=Math.round(count/course.length*100)+"%";
+ const next=course.find(item=>!completed.includes(item.id));
+ const nextText=document.getElementById("studentNextText");
+ const nextButton=document.getElementById("nextLessonButton");
+ if(next){
+  nextText.textContent="Aapka agla lesson: "+next.title;
+  nextButton.disabled=false;
+  nextButton.textContent="Continue Learning →";
+ }else{
+  nextText.textContent="Mubarak ho! Aap ne tamam 20 lessons complete kar liye.";
+  nextButton.disabled=true;
+  nextButton.textContent="Course Completed 🏆";
+ }
+ const recent=document.getElementById("studentRecent");
+ recent.innerHTML="<li>Quiz activity load ho rahi hai...</li>";
+ const {data,error}=await db.from("quiz_attempts")
+  .select("lesson_id,score,total_questions,attempted_at")
+  .eq("user_id",currentUser.id)
+  .order("attempted_at",{ascending:false})
+  .limit(100);
+ if(error){
+  document.getElementById("studentAttempts").textContent="—";
+  document.getElementById("studentAverage").textContent="—";
+  recent.textContent="Quiz activity load nahi ho saki.";
+  return;
+ }
+ const attempts=data||[];
+ document.getElementById("studentAttempts").textContent=attempts.length;
+ const totalQuestions=attempts.reduce((sum,item)=>sum+(Number(item.total_questions)||0),0);
+ const totalCorrect=attempts.reduce((sum,item)=>sum+(Number(item.score)||0),0);
+ document.getElementById("studentAverage").textContent=totalQuestions?Math.round(totalCorrect/totalQuestions*100)+"%":"—";
+ recent.innerHTML="";
+ if(!attempts.length){
+  recent.textContent="Abhi koi quiz attempt nahi hua. Lesson complete karein aur apna pehla quiz dein!";
+  return;
+ }
+ attempts.slice(0,5).forEach(item=>{
+  const li=document.createElement("li");
+  const title=course.find(lesson=>lesson.id===Number(item.lesson_id))?.title||("Lesson "+item.lesson_id);
+  const score=Number(item.score)||0;
+  const total=Number(item.total_questions)||0;
+  const result=document.createElement("strong");
+  result.textContent=title+" — "+score+"/"+total+" "+(total&&score/total>=.8?"✓ Passed":"");
+  const date=document.createElement("small");
+  const parsed=new Date(item.attempted_at);
+  date.textContent=Number.isNaN(parsed.getTime())?"":parsed.toLocaleString();
+  li.appendChild(result);li.appendChild(date);recent.appendChild(li);
+ });
 }
 
 function updateProgress(){
@@ -1145,6 +1236,7 @@ async function submitQuiz(){
  }else{
   notify("Score "+score+"/"+total+". Pass hone ke liye 4 sahi jawab chahiye. Dobara parhein aur try karein.");
  }
+ if(currentRole==="student")await loadStudentDashboard();
 }
 
 function filterAdminStudents(){
