@@ -90,9 +90,72 @@ header:after{content:"";position:absolute;left:-10%;right:-10%;bottom:0;height:2
 .message-compose textarea{width:100%;min-height:90px;padding:12px;border-radius:8px;border:1px solid #66552b;background:#242424;color:#fff;font:inherit;resize:vertical}
 .message-compose select{width:100%;padding:11px;border-radius:8px;background:#242424;color:#fff;border:1px solid #66552b}
 
+
+/* Animated Amazon-market inspired background */
+body{background:#05080b;position:relative;isolation:isolate}
+#marketWallpaper{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;opacity:.48}
+body:after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(3,8,12,.36),rgba(3,8,12,.78))}
+header,main,.welcome-overlay{position:relative;z-index:1}
+.market-ticker{position:relative;z-index:2;overflow:hidden;white-space:nowrap;background:rgba(5,12,17,.92);border-top:1px solid #23443e;border-bottom:1px solid #b88b25;padding:9px 0;color:#d9e8df;font:12px Arial,sans-serif;letter-spacing:1px}
+.market-ticker-track{display:inline-block;min-width:max-content;animation:marketScroll 34s linear infinite}
+.market-ticker span{display:inline-block;margin:0 28px}
+.market-ticker b{color:#eac24b}
+.market-ticker .up{color:#62d99b}
+@keyframes marketScroll{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
+@media(prefers-reduced-motion:reduce){.market-ticker-track{animation:none}}
+
 </style>
 </head>
 <body>
+
+<canvas id="marketWallpaper" aria-hidden="true"></canvas>
+<div class="market-ticker" aria-label="Amazon business learning ticker">
+ <div class="market-ticker-track">
+  <span><b>KASHI GROWTH ACADEMY</b></span><span class="up">↗ PRODUCT RESEARCH</span><span>📦 INVENTORY & FBA</span><span class="up">↗ SALES GROWTH</span><span>🎯 PPC CAMPAIGNS</span><span>★ CUSTOMER EXPERIENCE</span><span class="up">↗ BRAND BUILDING</span><span><b>LEARN • BUILD • GROW</b></span>
+ </div>
+</div>
+<script>
+(()=>{
+ const canvas=document.getElementById('marketWallpaper');
+ if(!canvas)return;
+ const ctx=canvas.getContext('2d');
+ let w=0,h=0,frame=0,candles=[];
+ function resize(){
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  w=window.innerWidth;h=window.innerHeight;
+  canvas.width=w*dpr;canvas.height=h*dpr;
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const count=Math.ceil(w/17)+8;
+  candles=Array.from({length:count},(_,i)=>({x:i*17,base:h*.43+Math.sin(i*.31)*h*.13,seed:i*9.73}));
+ }
+ function draw(){
+  frame++;
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle='rgba(110,160,155,.10)';ctx.lineWidth=1;
+  for(let x=0;x<w;x+=55){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+  for(let y=0;y<h;y+=55){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+  candles.forEach((c,i)=>{
+   const drift=Math.sin(frame*.012+c.seed)*17+Math.sin(frame*.004+i*.7)*24;
+   const y=c.base+drift, body=7+Math.abs(Math.sin(frame*.025+c.seed))*13;
+   const up=Math.sin(frame*.018+c.seed)>.05;
+   ctx.strokeStyle=up?'rgba(66,205,145,.55)':'rgba(230,91,91,.48)';
+   ctx.fillStyle=up?'rgba(66,205,145,.40)':'rgba(230,91,91,.34)';
+   ctx.beginPath();ctx.moveTo(c.x+5,y-13);ctx.lineTo(c.x+5,y+body+12);ctx.stroke();
+   ctx.fillRect(c.x,y,10,up?body:-body);
+  });
+  ctx.beginPath();
+  for(let x=0;x<w;x+=5){
+   const y=h*.72+Math.sin(x*.008+frame*.012)*18+Math.sin(x*.021-frame*.009)*7;
+   if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle='rgba(222,177,65,.32)';ctx.lineWidth=2;ctx.stroke();
+  requestAnimationFrame(draw);
+ }
+ resize();window.addEventListener('resize',resize,{passive:true});draw();
+})();
+</script>
+
 
 <header>
 <h1>KASHI GROWTH ACADEMY</h1>
