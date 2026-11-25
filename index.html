@@ -264,7 +264,7 @@ header,main,.welcome-overlay{position:relative;z-index:1}
 <section id="certificateCard" class="card certificate-card">
  <div class="certificate-mark">🏆</div>
  <h2>Course Completion Certificate</h2>
- <p id="certificateStatus" class="small">10 lessons complete karne par aap apna certificate hasil kar sakte hain.</p>
+ <p id="certificateStatus" class="small">20 lessons complete karne par aap apna certificate hasil kar sakte hain.</p>
  <button id="certificateButton" onclick="printCertificate()" disabled>🔒 Complete All Lessons to Unlock</button>
  <p class="small">Ye Kashi Growth Academy ka course-completion certificate hai; Amazon ki taraf se issued ya endorsed certificate nahi hai.</p>
 </section>
@@ -732,7 +732,7 @@ body:`
 <h3>8. Professional seller habits</h3>
 <p>Accurate records rakhein, policies follow karein, customer ko honest information dein aur business decisions data ki bunyaad par karein. Sustainable growth ke liye patience aur continuous learning zaroori hai.</p>
 <h3>Final Course Summary</h3>
-<p>Aap ne Amazon introduction se le kar account setup, product research, sourcing, fulfillment, listing, SEO, pricing, PPC aur business operations tak 10 important topics study kiye. Ab in concepts ko practical exercises aur official Amazon resources ke saath apply karein.</p>`,
+<p>Aap ne Amazon introduction, product research, sourcing, fulfillment, listing, SEO, pricing, PPC, Seller Central, account health, inventory, customer service, business metrics aur scaling tak 20 important topics study kiye. Ab in concepts ko practical exercises aur official Amazon resources ke saath apply karein.</p>`,
 quiz:[
 ["Order management kahan se hota hai?",["Seller Central Orders section","Photo gallery","Social media only"],0],
 ["Customer complaint ka jawab kaisa hona chahiye?",["Professional aur helpful","Rude","Ignore karna"],0],
@@ -1051,7 +1051,7 @@ async function submitQuiz(){
   updateProgress();
   renderLessons();
   if(currentLesson.id===course.length){
-   notify("Mubarak ho! Aap ne tamam 10 lessons complete kar liye! 🎉");
+   notify("Mubarak ho! Aap ne tamam "+course.length+" lessons complete kar liye! 🎉");
   }else{
    notify("Mubarak ho! Score "+score+"/"+total+". Lesson complete! Agla lesson unlock ho gaya.");
   }
