@@ -79,6 +79,17 @@ header:after{content:"";position:absolute;left:-10%;right:-10%;bottom:0;height:2
 .market-decoration{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:15px 0}
 .market-chip{border:1px solid #69521e;background:#211b0d;color:#f2d477;border-radius:999px;padding:7px 12px;font-size:12px}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}}
+
+/* Student-teacher messaging */
+.message-thread{background:#101010;border:1px solid #51421e;border-radius:10px;padding:12px;margin:12px 0;max-height:360px;overflow:auto}
+.chat-bubble{padding:10px 12px;border-radius:12px;margin:9px 0;max-width:88%;line-height:1.5;overflow-wrap:anywhere}
+.chat-student{background:#292929;border:1px solid #555;margin-left:auto}
+.chat-admin{background:#3a2e12;border:1px solid #987526;margin-right:auto}
+.chat-meta{display:block;color:#c9b77f;font-size:11px;margin-top:5px}
+.message-compose{display:grid;gap:8px}
+.message-compose textarea{width:100%;min-height:90px;padding:12px;border-radius:8px;border:1px solid #66552b;background:#242424;color:#fff;font:inherit;resize:vertical}
+.message-compose select{width:100%;padding:11px;border-radius:8px;background:#242424;color:#fff;border:1px solid #66552b}
+
 </style>
 </head>
 <body>
@@ -157,6 +168,31 @@ header:after{content:"";position:absolute;left:-10%;right:-10%;bottom:0;height:2
 </table>
 </div>
 </div>
+</section>
+
+
+<section id="studentMessages" class="card hidden">
+ <h2>Message Your Teacher</h2>
+ <p class="small">Apna sawal ya learning issue yahan bhejein. Teacher ka reply isi jagah nazar aayega.</p>
+ <div id="studentThread" class="message-thread" aria-live="polite"></div>
+ <div class="message-compose">
+  <textarea id="studentMessageText" maxlength="2000" placeholder="Apna message likhein..."></textarea>
+  <button onclick="sendStudentMessage()">Send Message</button>
+ </div>
+</section>
+
+<section id="adminMessages" class="card hidden">
+ <h2>Student Messages Inbox</h2>
+ <p class="small">Student select karein, uska message parhein aur reply bhejein.</p>
+ <div class="message-compose">
+  <select id="messageStudentSelect" onchange="loadAdminMessages()"><option value="">Students load ho rahe hain...</option></select>
+ </div>
+ <div id="adminThread" class="message-thread" aria-live="polite"></div>
+ <div class="message-compose">
+  <textarea id="adminReplyText" maxlength="2000" placeholder="Student ko reply likhein..."></textarea>
+  <button onclick="sendAdminReply()">Send Reply</button>
+ </div>
+ <button class="secondary" onclick="loadMessageInbox()">Refresh Inbox</button>
 </section>
 
 <div class="market-banner" aria-label="Academy highlights">
@@ -679,6 +715,8 @@ async function startAcademy(user){
     await loadAdminDashboard();
   }
 
+  await loadMessaging();
+
   const welcomeKey="kga_welcome_"+user.id;
   if(!sessionStorage.getItem(welcomeKey)){
     sessionStorage.setItem(welcomeKey,"shown");
@@ -869,6 +907,94 @@ async function loadAdminDashboard(){
   });
  }
  adminMessage.textContent="Dashboard update ho gaya.";
+}
+
+
+function messageTime(value){
+ const date=new Date(value);
+ return Number.isNaN(date.getTime())?"":date.toLocaleString();
+}
+function renderMessageThread(targetId,rows){
+ const box=document.getElementById(targetId);
+ if(!rows||!rows.length){box.innerHTML="<p class='small'>Abhi koi message nahi hai. Pehla message bhejein.</p>";return}
+ box.innerHTML="";
+ rows.forEach(item=>{
+  const bubble=document.createElement("div");
+  bubble.className="chat-bubble "+(item.sender_role==="admin"?"chat-admin":"chat-student");
+  const body=document.createElement("div");
+  body.textContent=item.message;
+  const meta=document.createElement("span");
+  meta.className="chat-meta";
+  meta.textContent=(item.sender_role==="admin"?"Teacher":"Student")+" • "+messageTime(item.created_at);
+  bubble.appendChild(body);bubble.appendChild(meta);box.appendChild(bubble);
+ });
+ box.scrollTop=box.scrollHeight;
+}
+async function loadMessaging(){
+ if(!currentUser)return;
+ if(currentRole==="admin"){
+  document.getElementById("adminMessages").classList.remove("hidden");
+  await loadMessageInbox();
+ }else{
+  document.getElementById("studentMessages").classList.remove("hidden");
+  await loadStudentMessages();
+ }
+}
+async function loadStudentMessages(){
+ if(!currentUser)return;
+ const box=document.getElementById("studentThread");
+ box.innerHTML="<p class='small'>Messages load ho rahe hain...</p>";
+ const {data,error}=await db.from("teacher_messages").select("id,sender_role,message,created_at")
+  .eq("user_id",currentUser.id).order("created_at",{ascending:true});
+ if(error){box.textContent="Messages load nahi huay. Database setup check karein: "+error.message;return}
+ renderMessageThread("studentThread",data||[]);
+}
+async function sendStudentMessage(){
+ const input=document.getElementById("studentMessageText");
+ const message=input.value.trim();
+ if(!message){notify("Pehle apna message likhein.");return}
+ const {error}=await db.from("teacher_messages").insert({
+  user_id:currentUser.id,sender_role:"student",message
+ });
+ if(error){notify("Message send nahi hua: "+error.message);return}
+ input.value="";await loadStudentMessages();notify("Aapka message teacher ko bhej diya gaya.");
+}
+async function loadMessageInbox(){
+ if(!currentUser||currentRole!=="admin")return;
+ const select=document.getElementById("messageStudentSelect");
+ const previous=select.value;
+ const {data:profiles,error}=await db.from("profiles").select("id,full_name").order("full_name");
+ if(error){select.innerHTML="<option value=''>Students load nahi huay</option>";document.getElementById("adminThread").textContent=error.message;return}
+ select.innerHTML="<option value=''>Student select karein</option>";
+ (profiles||[]).filter(p=>p.id!==currentUser.id).forEach(p=>{
+  const option=document.createElement("option");option.value=p.id;option.textContent=p.full_name||"Student";select.appendChild(option);
+ });
+ if(previous&&[...select.options].some(o=>o.value===previous))select.value=previous;
+ else if(select.options.length>1)select.selectedIndex=1;
+ await loadAdminMessages();
+}
+async function loadAdminMessages(){
+ if(!currentUser||currentRole!=="admin")return;
+ const userId=document.getElementById("messageStudentSelect").value;
+ const box=document.getElementById("adminThread");
+ if(!userId){box.innerHTML="<p class='small'>Messages dekhne ke liye student select karein.</p>";return}
+ box.innerHTML="<p class='small'>Messages load ho rahe hain...</p>";
+ const {data,error}=await db.from("teacher_messages").select("id,sender_role,message,created_at")
+  .eq("user_id",userId).order("created_at",{ascending:true});
+ if(error){box.textContent="Inbox load nahi hua: "+error.message;return}
+ renderMessageThread("adminThread",data||[]);
+}
+async function sendAdminReply(){
+ const userId=document.getElementById("messageStudentSelect").value;
+ const input=document.getElementById("adminReplyText");
+ const message=input.value.trim();
+ if(!userId){notify("Pehle student select karein.");return}
+ if(!message){notify("Pehle reply likhein.");return}
+ const {error}=await db.from("teacher_messages").insert({
+  user_id:userId,sender_role:"admin",message
+ });
+ if(error){notify("Reply send nahi hua: "+error.message);return}
+ input.value="";await loadAdminMessages();notify("Reply student ko bhej diya gaya.");
 }
 
 db.auth.getSession().then(({data,error})=>{
