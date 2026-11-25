@@ -172,6 +172,9 @@ header,main,.welcome-overlay{position:relative;z-index:1}
 
 
 .lesson-sample-gallery{margin:18px 0 22px;padding:14px;border:1px solid rgba(212,175,55,.28);border-radius:14px;background:rgba(255,255,255,.025)}.lesson-sample-gallery h3{margin:0 0 12px;color:#f0d477;font-size:16px}.lesson-sample-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.lesson-sample-gallery h3{grid-column:1/-1}.lesson-sample-gallery figure{margin:0;min-width:0}.lesson-sample-gallery img{display:block;width:100%;height:130px;object-fit:cover;border-radius:9px;border:1px solid rgba(255,255,255,.12)}.lesson-sample-gallery figcaption{font-size:11px;color:#d6d0c1;margin-top:6px;text-align:center}@media(max-width:600px){.lesson-sample-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}.lesson-sample-gallery figure:last-child{grid-column:1/-1}.lesson-sample-gallery figure:last-child img{height:150px}}
+
+/* Admin individual student report */
+.student-detail-panel{margin:16px 0;padding:18px;border:1px solid #806326;border-radius:12px;background:linear-gradient(145deg,#211d12,#101a1c)}.student-detail-panel h3{margin-top:0}.student-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin:12px 0}.student-detail-stat{padding:12px;border:1px solid #514521;border-radius:9px;background:#171b19}.student-detail-stat small{display:block;color:#cfc6ac}.student-detail-stat b{display:block;color:#f4d477;font-size:20px;margin-top:5px}.student-detail-lessons{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin:12px 0}.student-detail-lesson{padding:10px;border:1px solid #3d4842;border-radius:8px;background:#151a19;font-size:12px}.student-detail-lesson b{display:block;color:#f0d477;margin-bottom:4px}.student-detail-lesson small{color:#c4c9c2}.admin-table tbody tr.student-row-click{cursor:pointer}.admin-table tbody tr.student-row-click:focus{outline:2px solid #f0c64b;outline-offset:-2px}.admin-table tbody tr.student-row-selected{background:rgba(212,171,65,.16)}
 </style>
 </head>
 <body>
@@ -326,6 +329,12 @@ header,main,.welcome-overlay{position:relative;z-index:1}
    <tbody id="studentRows"><tr><td colspan="7">Loading...</td></tr></tbody>
   </table>
  </div>
+ <div id="studentDetailPanel" class="student-detail-panel hidden" aria-live="polite">
+  <div class="admin-section-heading"><div><span class="admin-kicker">INDIVIDUAL STUDENT REPORT</span><h3 id="studentDetailName">Student details</h3><p class="small" id="studentDetailMeta"></p></div><button class="secondary" type="button" onclick="closeStudentDetails()">Close Details</button></div>
+  <div id="studentDetailStats" class="student-detail-grid"></div>
+  <h3>Lesson-by-Lesson Progress</h3><div id="studentDetailLessons" class="student-detail-lessons"></div>
+  <h3>Quiz Attempt History</h3><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Lesson</th><th>Score</th><th>Result</th><th>Attempt Date</th></tr></thead><tbody id="studentDetailQuizzes"></tbody></table></div>
+ </div>
 </div>
 <div class="admin-section">
  <div class="admin-section-heading"><div><span class="admin-kicker">ASSESSMENT ANALYTICS</span><h3>Recent Quiz Results</h3></div><span class="admin-count">Latest first</span></div>
@@ -397,6 +406,7 @@ const welcomeSlides=[
  "Quiz pass karein, agla lesson unlock karein aur apni progress se apni growth dekhein."
 ];
 let currentLesson=null;
+let adminStudentRecords=[];
 
 const course=[
 {
@@ -1239,6 +1249,47 @@ async function submitQuiz(){
  if(currentRole==="student")await loadStudentDashboard();
 }
 
+function closeStudentDetails(){
+ document.getElementById("studentDetailPanel").classList.add("hidden");
+ document.querySelectorAll("#studentRows tr.student-row-selected").forEach(row=>row.classList.remove("student-row-selected"));
+}
+function showStudentDetails(studentId){
+ const record=adminStudentRecords.find(item=>item.profile.id===studentId);
+ if(!record)return;
+ const {profile,progress,attempts}=record;
+ const completedLessons=progress.filter(item=>item.completed);
+ const totalQuestions=attempts.reduce((sum,item)=>sum+(Number(item.total_questions)||0),0);
+ const totalCorrect=attempts.reduce((sum,item)=>sum+(Number(item.score)||0),0);
+ const average=totalQuestions?Math.round(totalCorrect/totalQuestions*100):null;
+ const dates=[...attempts.map(item=>item.attempted_at),...progress.map(item=>item.updated_at)].filter(Boolean).map(value=>new Date(value)).filter(date=>!Number.isNaN(date.getTime()));
+ const lastActivity=dates.length?formatDate(new Date(Math.max(...dates.map(date=>date.getTime()))).toISOString()):"No activity";
+ document.getElementById("studentDetailName").textContent=profile.full_name||"Student";
+ document.getElementById("studentDetailMeta").textContent="Registered: "+formatDate(profile.created_at)+" • Last activity: "+lastActivity;
+ const stats=[["Lessons completed",completedLessons.length+" / "+course.length],["Course progress",Math.round(completedLessons.length/course.length*100)+"%"],["Quiz attempts",attempts.length],["Average quiz score",average===null?"—":average+"%"]];
+ const statsBox=document.getElementById("studentDetailStats");statsBox.innerHTML="";
+ stats.forEach(([label,value])=>{const card=document.createElement("div");card.className="student-detail-stat";const small=document.createElement("small");small.textContent=label;const strong=document.createElement("b");strong.textContent=value;card.append(small,strong);statsBox.appendChild(card)});
+ const lessonsBox=document.getElementById("studentDetailLessons");lessonsBox.innerHTML="";
+ course.forEach(lesson=>{
+  const lessonProgress=progress.find(item=>Number(item.lesson_id)===Number(lesson.id)&&item.completed);
+  const lessonAttempts=attempts.filter(item=>Number(item.lesson_id)===Number(lesson.id));
+  const card=document.createElement("div");card.className="student-detail-lesson";
+  const heading=document.createElement("b");heading.textContent="Lesson "+lesson.id+": "+lesson.title.replace(new RegExp("^Lesson\\s*\\d+\\s*[—-]\\s*"),"");
+  const detail=document.createElement("small");detail.textContent=(lessonProgress?"Completed":lessonAttempts.length?"Attempted, not completed":"Not started")+" • "+lessonAttempts.length+" quiz attempt(s)";
+  card.append(heading,detail);lessonsBox.appendChild(card);
+ });
+ const quizBody=document.getElementById("studentDetailQuizzes");quizBody.innerHTML="";
+ if(!attempts.length){const row=document.createElement("tr");const cell=document.createElement("td");cell.colSpan=4;cell.textContent="Is student ka abhi koi quiz attempt nahi.";row.appendChild(cell);quizBody.appendChild(row)}
+ else attempts.forEach(attempt=>{
+  const row=document.createElement("tr");
+  ["Lesson "+attempt.lesson_id,(attempt.score??0)+" / "+(attempt.total_questions??0),Number(attempt.score)>=4?"Passed":"Not Passed",formatDate(attempt.attempted_at)].forEach(value=>{const cell=document.createElement("td");cell.textContent=value;row.appendChild(cell)});
+  quizBody.appendChild(row);
+ });
+ document.querySelectorAll("#studentRows tr.student-row-selected").forEach(row=>row.classList.remove("student-row-selected"));
+ document.querySelectorAll("#studentRows tr").forEach(row=>{if(row.dataset.studentId===studentId)row.classList.add("student-row-selected")});
+ document.getElementById("studentDetailPanel").classList.remove("hidden");
+ document.getElementById("studentDetailPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
 function filterAdminStudents(){
  const query=(document.getElementById("adminStudentSearch")?.value||"").trim().toLowerCase();
  document.querySelectorAll("#studentRows tr").forEach(row=>{
@@ -1293,6 +1344,7 @@ async function loadAdminDashboard(){
  const names={};
  studentList.forEach(student=>{names[student.id]=student.full_name||"Student"});
 
+ adminStudentRecords=studentList.map(student=>({profile:student,progress:progressList.filter(item=>item.user_id===student.id),attempts:attemptList.filter(item=>item.user_id===student.id)}));
  const studentRows=document.getElementById("studentRows");
  studentRows.innerHTML="";
  if(!studentList.length){
@@ -1320,6 +1372,13 @@ async function loadAdminDashboard(){
     "<td>"+(attemptQuestions?average+"%":"—")+"</td>"+
     "<td>"+(lastActivity?escapeHtml(formatDate(lastActivity.toISOString())):"No activity")+"</td>";
    row.dataset.search=(student.full_name||"Student").toLowerCase();
+   row.dataset.studentId=student.id;
+   row.classList.add("student-row-click");
+   row.tabIndex=0;
+   row.setAttribute("role","button");
+   row.setAttribute("aria-label","View details for "+(student.full_name||"Student"));
+   row.addEventListener("click",()=>showStudentDetails(student.id));
+   row.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();showStudentDetails(student.id)}});
    studentRows.appendChild(row);
   });
  }
