@@ -321,7 +321,7 @@ header,main,.welcome-overlay{position:relative;z-index:1}
  <div class="stat admin-stat"><span class="stat-icon">🎯</span><span class="stat-label">Average Quiz Score</span><strong id="adminAverageScore">0%</strong><small>Across all attempts</small></div>
 </div>
 <div class="admin-section">
- <div class="admin-section-heading"><div><span class="admin-kicker">STUDENT MANAGEMENT</span><h3>Student Profiles & Progress</h3></div><span class="admin-count" id="studentCountLabel">0 accounts</span></div>
+ <div class="admin-section-heading"><div><span class="admin-kicker">STUDENT MANAGEMENT</span><h3>Student Profiles & Progress</h3></div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="admin-count" id="studentCountLabel">0 accounts</span><button class="secondary" type="button" onclick="exportAdminStudentsCSV()">↓ Export CSV</button></div></div>
  <div class="admin-toolbar"><input id="adminStudentSearch" type="search" placeholder="Search student name..." oninput="filterAdminStudents()" aria-label="Search students"><select id="adminStudentStatus" onchange="filterAdminStudents()" aria-label="Filter students by activity"><option value="all">All activity statuses</option><option value="active">Active (last 30 days)</option><option value="inactive">Inactive / no activity</option></select><span>Search & activity filter</span></div>
  <div class="admin-table-wrap">
   <table class="admin-table">
@@ -1290,6 +1290,34 @@ function showStudentDetails(studentId){
  document.getElementById("studentDetailPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
+function exportAdminStudentsCSV(){
+ const visibleIds=new Set([...document.querySelectorAll("#studentRows tr")].filter(row=>!row.classList.contains("hidden")&&row.dataset.studentId).map(row=>row.dataset.studentId));
+ const records=adminStudentRecords.filter(record=>visibleIds.has(record.profile.id));
+ if(!records.length){notify("Export ke liye koi student record nazar nahi aa raha.");return}
+ const csvCell=value=>{
+  let text=String(value??'');
+  if(/^[=+@\\-\\t\\r]/.test(text))text="'"+text;
+  return '"'+text.replace(/"/g,'""')+'"';
+ };
+ const rows=[["Student Name","Registration Date","Lessons Completed","Course Progress","Quiz Attempts","Average Quiz Score","Last Activity","Activity Status"]];
+ records.forEach(({profile,progress,attempts})=>{
+  const done=progress.filter(item=>item.completed);
+  const totalQuestions=attempts.reduce((sum,item)=>sum+(Number(item.total_questions)||0),0);
+  const totalCorrect=attempts.reduce((sum,item)=>sum+(Number(item.score)||0),0);
+  const average=totalQuestions?Math.round(totalCorrect/totalQuestions*100):null;
+  const dates=[...attempts.map(item=>item.attempted_at),...done.map(item=>item.updated_at)].filter(Boolean).map(value=>new Date(value)).filter(date=>!Number.isNaN(date.getTime()));
+  const last=dates.length?new Date(Math.max(...dates.map(date=>date.getTime()))):null;
+  const active=!!last&&(Date.now()-last.getTime())<=30*24*60*60*1000;
+  rows.push([profile.full_name||"Student",formatDate(profile.created_at),done.length+" / "+course.length,Math.round(done.length/course.length*100)+"%",attempts.length,average===null?"—":average+"%",last?formatDate(last.toISOString()):"No activity",active?"Active":"Inactive"]);
+ });
+ const csv="\\uFEFF"+rows.map(row=>row.map(csvCell).join(",")).join("\\r\\n");
+ const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+ const url=URL.createObjectURL(blob);
+ const link=document.createElement("a");
+ link.href=url;link.download="kashi-growth-academy-students-"+new Date().toISOString().slice(0,10)+".csv";
+ document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+ notify(records.length+" student records CSV mein export ho gaye.");
+}
 function filterAdminStudents(){
  const query=(document.getElementById("adminStudentSearch")?.value||"").trim().toLowerCase();
  const status=document.getElementById("adminStudentStatus")?.value||"all";
