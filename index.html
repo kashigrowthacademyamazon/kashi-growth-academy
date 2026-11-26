@@ -1145,11 +1145,12 @@ async function verifyCertificate(){
  const certificateId=(input.value||"").trim().toUpperCase();
  if(!certificateId){result.textContent="Certificate ID enter karein.";return}
  result.textContent="Certificate verify ho raha hai...";
- const {data,error}=await db.from("certificates").select("certificate_id,student_name,issued_at,course_name,lessons_completed").eq("certificate_id",certificateId).maybeSingle();
+ const {data,error}=await db.rpc("verify_kga_certificate",{p_certificate_id:certificateId});
  if(error){result.textContent="Verification service available nahi. Database setup check karein: "+error.message;return}
- if(!data){result.textContent="❌ Certificate record nahi mila. ID dobara check karein.";return}
- const date=new Date(data.issued_at);
- result.innerHTML="<strong style='color:#8ce0ae'>✓ Certificate Verified</strong><br>Student: "+escapeHtml(data.student_name)+"<br>Course: "+escapeHtml(data.course_name)+"<br>Lessons completed: "+escapeHtml(data.lessons_completed)+"<br>Issue date: "+escapeHtml(Number.isNaN(date.getTime())?"—":date.toLocaleDateString("en-GB"))+"<br>Certificate ID: "+escapeHtml(data.certificate_id)+"<br><span class='small'>Issued by Kashi Growth Academy. Not an Amazon-issued certificate.</span>";
+ const verified=Array.isArray(data)?data[0]:data;
+ if(!verified){result.textContent="❌ Certificate record nahi mila. ID dobara check karein.";return}
+ const date=new Date(verified.issued_at);
+ result.innerHTML="<strong style='color:#8ce0ae'>✓ Certificate Verified</strong><br>Student: "+escapeHtml(verified.student_name)+"<br>Course: "+escapeHtml(verified.course_name)+"<br>Lessons completed: "+escapeHtml(verified.lessons_completed)+"<br>Issue date: "+escapeHtml(Number.isNaN(date.getTime())?"—":date.toLocaleDateString("en-GB"))+"<br>Certificate ID: "+escapeHtml(verified.certificate_id)+"<br><span class='small'>Issued by Kashi Growth Academy. Not an Amazon-issued certificate.</span>";
 }
 async function loadAdminCertificates(){
  const body=document.getElementById("adminCertificateRows");
