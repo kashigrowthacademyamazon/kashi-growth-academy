@@ -1250,7 +1250,13 @@ async function submitQuiz(){
  if(currentRole==="student")await loadStudentDashboard();
 }
 
-function printStudentReport(){\n const panel=document.getElementById("studentDetailPanel");\n if(!panel||panel.classList.contains("hidden")){notify("Pehle student ki details open karein.");return}\n window.print();\n}\n\nfunction closeStudentDetails(){
+function printStudentReport(){
+ const panel=document.getElementById("studentDetailPanel");
+ if(!panel||panel.classList.contains("hidden")){notify("Pehle student ki details open karein.");return}
+ window.print();
+}
+
+function closeStudentDetails(){
  document.getElementById("studentDetailPanel").classList.add("hidden");
  document.querySelectorAll("#studentRows tr.student-row-selected").forEach(row=>row.classList.remove("student-row-selected"));
 }
