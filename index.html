@@ -254,6 +254,11 @@ header,main,.welcome-overlay{position:relative;z-index:1}
 
 <main>
 <div id="message" class="hidden"></div>
+<section id="certificateVerify" class="card">
+ <h2>Certificate Verification</h2><p class="small">Certificate ID enter karein ya QR code scan kar ke certificate ki authenticity check karein.</p>
+ <div class="admin-toolbar"><input id="verifyCertificateId" type="text" maxlength="60" placeholder="Example: KGA-2026-ABC123" aria-label="Certificate ID"><button type="button" onclick="verifyCertificate()">Verify Certificate</button></div>
+ <div id="certificateVerifyResult" class="small" aria-live="polite"></div>
+</section>
 
 <section id="auth" class="card">
 <h2>Student Login / Registration</h2>
@@ -336,6 +341,11 @@ header,main,.welcome-overlay{position:relative;z-index:1}
   <h3>Lesson-by-Lesson Progress</h3><div id="studentDetailLessons" class="student-detail-lessons"></div>
   <h3>Quiz Attempt History</h3><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Lesson</th><th>Score</th><th>Result</th><th>Attempt Date</th></tr></thead><tbody id="studentDetailQuizzes"></tbody></table></div>
  </div>
+</div>
+<div class="admin-section">
+ <div class="admin-section-heading"><div><span class="admin-kicker">CERTIFICATE MANAGEMENT</span><h3>Issued Certificates</h3></div><button class="secondary" type="button" onclick="loadAdminCertificates()">Refresh Certificates</button></div>
+ <p class="small">Issued certificates ki list aur verification IDs.</p>
+ <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Certificate ID</th><th>Issue Date</th><th>Verification</th></tr></thead><tbody id="adminCertificateRows"><tr><td colspan="4">Load ho raha hai...</td></tr></tbody></table></div>
 </div>
 <div class="admin-section">
  <div class="admin-section-heading"><div><span class="admin-kicker">ASSESSMENT ANALYTICS</span><h3>Recent Quiz Results</h3></div><span class="admin-count">Latest first</span></div>
@@ -1080,38 +1090,81 @@ function updateProgress(){
  }
 }
 
-function printCertificate(){
+
+async function getOrCreateCertificate(){
+ if(!currentUser)throw new Error("Student login required.");
+ const {data:existing,error:readError}=await db.from("certificates").select("certificate_id,student_name,issued_at").eq("user_id",currentUser.id).maybeSingle();
+ if(readError)throw new Error("Certificate record load nahi hua: "+readError.message);
+ if(existing)return existing;
+ const studentName=currentUser.user_metadata?.full_name||currentUser.email?.split("@")[0]||"Academy Student";
+ const randomPart=(crypto.randomUUID?crypto.randomUUID().replace(/-/g,"").slice(0,10):Math.random().toString(36).slice(2,12)).toUpperCase();
+ const certificateId="KGA-"+new Date().getFullYear()+"-"+randomPart;
+ const record={user_id:currentUser.id,certificate_id:certificateId,student_name:studentName,issued_at:new Date().toISOString(),course_name:"Amazon Seller Training Course",lessons_completed:course.length};
+ const {data,error}=await db.from("certificates").insert(record).select("certificate_id,student_name,issued_at").single();
+ if(error)throw new Error("Certificate issue nahi hua: "+error.message);
+ return data;
+}
+async function printCertificate(){
  if(!currentUser)return;
  const count=course.filter(item=>completed.includes(item.id)).length;
  if(count!==course.length){notify("Certificate unlock karne ke liye tamam "+course.length+" lessons pass karein.");return}
- const studentName=currentUser.user_metadata?.full_name||currentUser.email?.split("@")[0]||"Academy Student";
- const safeName=escapeHtml(studentName);
- const issueDate=new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
- const certificateId="KGA-"+String(currentUser.id).replace(/-/g,"").slice(0,8).toUpperCase()+"-20";
+ let certificate;
+ try{certificate=await getOrCreateCertificate()}catch(error){notify(error.message+" Admin se database setup SQL run karwayein.");return}
+ const safeName=escapeHtml(certificate.student_name||"Academy Student");
+ const issueDate=new Date(certificate.issued_at).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+ const certificateId=certificate.certificate_id;
+ const verifyUrl=window.location.origin+window.location.pathname+"?verify="+encodeURIComponent(certificateId);
+ const qrUrl="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data="+encodeURIComponent(verifyUrl);
  const win=window.open("","_blank","width=1000,height=760");
  if(!win){notify("Certificate window block ho gayi. Browser mein pop-ups allow karein aur dobara try karein.");return}
  win.document.open();
  win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kashi Growth Academy Certificate</title><style>
  *{box-sizing:border-box}body{margin:0;padding:32px;background:#f1eee6;font-family:Georgia,'Times New Roman',serif;color:#222}
- .sheet{max-width:1000px;min-height:680px;margin:auto;padding:48px;border:12px double #b58b27;background:#fffdf7;text-align:center;position:relative}
- .inner{border:1px solid #c5a64d;min-height:560px;padding:38px 28px}
+ .sheet{max-width:1000px;min-height:680px;margin:auto;padding:38px;border:12px double #b58b27;background:#fffdf7;text-align:center;position:relative}
+ .inner{border:1px solid #c5a64d;min-height:560px;padding:32px 24px}
  .brand{font:700 17px Arial,sans-serif;letter-spacing:5px;color:#92701c}.academy{font:700 34px Arial,sans-serif;color:#171717;margin:10px 0}
- .label{font:italic 23px Georgia;color:#80621a;margin-top:30px}.name{font:700 42px Georgia;color:#151515;border-bottom:1px solid #c5a64d;display:inline-block;padding:12px 36px;margin:22px 0}
- .desc{font:18px/1.7 Arial,sans-serif;max-width:720px;margin:10px auto}.course{font:700 23px Arial,sans-serif;color:#765913;margin:20px}
- .bottom{display:flex;justify-content:space-between;gap:25px;margin:48px 15px 0;font:14px Arial,sans-serif}.sign{min-width:230px;border-top:1px solid #777;padding-top:10px}.sign b{display:block;font:700 19px Georgia;margin-bottom:5px}
- .id{position:absolute;bottom:18px;left:0;right:0;font:11px Arial;color:#777}
+ .label{font:italic 23px Georgia;color:#80621a;margin-top:25px}.name{font:700 42px Georgia;color:#151515;border-bottom:1px solid #c5a64d;display:inline-block;padding:12px 36px;margin:18px 0}
+ .desc{font:17px/1.6 Arial,sans-serif;max-width:720px;margin:10px auto}.course{font:700 23px Arial,sans-serif;color:#765913;margin:16px}
+ .bottom{display:flex;justify-content:space-between;gap:25px;margin:30px 15px 0;font:14px Arial,sans-serif}.sign{min-width:230px;border-top:1px solid #777;padding-top:10px}.sign b{display:block;font:700 19px Georgia;margin-bottom:5px}
+ .verify{display:flex;align-items:center;justify-content:center;gap:18px;margin:18px auto 0;font:11px Arial,sans-serif;color:#555}.verify img{width:90px;height:90px}.id{font-weight:bold;color:#765913;margin-bottom:5px}
  .print{margin:18px auto;display:block;padding:12px 22px;background:#b58b27;color:#111;border:0;border-radius:6px;font-weight:bold;cursor:pointer}
  @media print{body{padding:0;background:white}.sheet{max-width:none;min-height:0;height:190mm;margin:0 auto;break-inside:avoid}.print{display:none}}
  @page{size:A4 landscape;margin:8mm}
  </style></head><body><main class="sheet"><div class="inner">
  <div class="brand">KASHI GROWTH ACADEMY</div><div class="academy">Certificate of Completion</div>
  <div class="label">This certificate is proudly presented to</div><div class="name">${safeName}</div>
- <p class="desc">For successfully completing the 10-lesson</p><div class="course">Amazon Seller Training Course</div>
+ <p class="desc">For successfully completing all 20 lessons of the</p><div class="course">Amazon Seller Training Course</div>
  <p class="desc">and demonstrating commitment to learning Amazon marketplace fundamentals, product research, sourcing, fulfillment, listing, SEO, pricing, advertising and seller operations.</p>
  <div class="bottom"><div class="sign"><b>Kashif Nawaz</b>Founder, Kashi Growth Academy</div><div class="sign"><b>${issueDate}</b>Date of Completion</div></div>
- </div><div class="id">Certificate ID: ${certificateId} · Issued by Kashi Growth Academy · Independent training certificate, not affiliated with Amazon.</div></main>
- <button class="print" onclick="window.print()">Print / Save as PDF</button></body></html>`);
+ <div class="verify"><img src="${qrUrl}" alt="Scan to verify certificate"><div><div class="id">Certificate ID: ${escapeHtml(certificateId)}</div><div>Scan QR code or visit:</div><div>${escapeHtml(verifyUrl)}</div><div>Independent training certificate; not affiliated with Amazon.</div></div></div>
+ </div></main><button class="print" onclick="window.print()">Print / Save as PDF</button></body></html>`);
  win.document.close();
+}
+async function verifyCertificate(){
+ const input=document.getElementById("verifyCertificateId"),result=document.getElementById("certificateVerifyResult");
+ const certificateId=(input.value||"").trim().toUpperCase();
+ if(!certificateId){result.textContent="Certificate ID enter karein.";return}
+ result.textContent="Certificate verify ho raha hai...";
+ const {data,error}=await db.from("certificates").select("certificate_id,student_name,issued_at,course_name,lessons_completed").eq("certificate_id",certificateId).maybeSingle();
+ if(error){result.textContent="Verification service available nahi. Database setup check karein: "+error.message;return}
+ if(!data){result.textContent="❌ Certificate record nahi mila. ID dobara check karein.";return}
+ const date=new Date(data.issued_at);
+ result.innerHTML="<strong style='color:#8ce0ae'>✓ Certificate Verified</strong><br>Student: "+escapeHtml(data.student_name)+"<br>Course: "+escapeHtml(data.course_name)+"<br>Lessons completed: "+escapeHtml(data.lessons_completed)+"<br>Issue date: "+escapeHtml(Number.isNaN(date.getTime())?"—":date.toLocaleDateString("en-GB"))+"<br>Certificate ID: "+escapeHtml(data.certificate_id)+"<br><span class='small'>Issued by Kashi Growth Academy. Not an Amazon-issued certificate.</span>";
+}
+async function loadAdminCertificates(){
+ const body=document.getElementById("adminCertificateRows");
+ if(!body||currentRole!=="admin")return;
+ body.innerHTML="<tr><td colspan='4'>Certificates load ho rahe hain...</td></tr>";
+ const {data,error}=await db.from("certificates").select("certificate_id,student_name,issued_at").order("issued_at",{ascending:false});
+ if(error){body.innerHTML="<tr><td colspan='4'>Certificates load nahi huay. SQL setup check karein: "+escapeHtml(error.message)+"</td></tr>";return}
+ body.innerHTML="";
+ if(!data?.length){body.innerHTML="<tr><td colspan='4'>Abhi koi certificate issue nahi hua.</td></tr>";return}
+ data.forEach(item=>{
+  const row=document.createElement("tr");
+  [item.student_name,item.certificate_id,formatDate(item.issued_at)].forEach(value=>{const cell=document.createElement("td");cell.textContent=value||"—";row.appendChild(cell)});
+  const cell=document.createElement("td"),link=document.createElement("a");
+  link.href=window.location.origin+window.location.pathname+"?verify="+encodeURIComponent(item.certificate_id);link.target="_blank";link.rel="noopener";link.textContent="Open verification";link.style.color="#f0d477";cell.appendChild(link);row.appendChild(cell);body.appendChild(row);
+ });
 }
 
 function isLessonUnlocked(id){
@@ -1469,6 +1522,7 @@ async function loadAdminDashboard(){
   });
  }
  adminMessage.textContent="Dashboard update ho gaya.";
+ await loadAdminCertificates();
 }
 
 
@@ -1567,6 +1621,9 @@ db.auth.onAuthStateChange((event)=>{
   notify("Email link verify ho gaya. Ab apna naya password set karein.");
  }
 });
+
+const verifyParam=new URLSearchParams(window.location.search).get("verify");
+if(verifyParam){document.getElementById("verifyCertificateId").value=verifyParam;window.addEventListener("load",()=>verifyCertificate())}
 
 db.auth.getSession().then(({data,error})=>{
  if(error){console.error(error.message);return}
